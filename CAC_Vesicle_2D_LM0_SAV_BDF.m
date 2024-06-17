@@ -201,12 +201,14 @@ result  = sqrt(fun_inner(1,fun_Q(phi)) + C0);
 end
 
 function result = fun_H(phi)
-global C0
+global C0 Lx Ly hx hy
 if fun_inner(1,fun_Q(phi)) + C0 <0
     disp("Root < 0");
     return;
 end
-result  = fun_q(phi)./sqrt(fun_inner(1,fun_Q(phi)) + C0);
+H = fun_q(phi)./sqrt(fun_inner(1,fun_Q(phi)) + C0);
+H_bar = fft2(H);
+result = H - 1./(Lx*Ly).*H_bar(1,1)*hx*hy;
 end
 
 function result = inv_A(phi)
