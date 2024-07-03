@@ -29,9 +29,9 @@ para.M = 2;
 PDE = 'data1';
 
 if 1 == strcmp(PDE,'data1')
-    T = 0.0002;
-    dt_array = 0.00001./2.^(0:6)';
-    dt_ref = 1e-8;
+    T = 0.002;
+    dt_array = 0.0001./2.^(0:6)';
+    dt_ref = 1e-7;
     para.C0 = 100; % SAV
     pde = ex03_1_Vesicles_data(para);
 end
@@ -70,7 +70,6 @@ if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
 %     CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
 %     CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
     CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
-%     CAC_Vesicle_2D_BDF2_newLM_p_SAV(pde,domain,Nx,Ny,time,option);
 end
 for k = 1:maxIt
     dt = dt_array(k);
@@ -78,7 +77,6 @@ for k = 1:maxIt
 %     v2 = CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
 %     v2 = CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
     v2 = CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
-%     v2 = CAC_Vesicle_2D_BDF2_newLM_p_SAV(pde,domain,Nx,Ny,time,option);
 end
 
 %% Compute order of convergence
@@ -131,15 +129,10 @@ grid on;
 hold on;
 
 %% Save error and order
-name=['phi_e',num2str(para.epsilon),'M',num2str(para.M),...
-      'Nx=',num2str(N),'Ny=',num2str(N)];
-fileID = fopen([name,'.txt'],'w');
-% fprintf(fileID,'%6s\n','%% Results');
-% fprintf(fileID,'%6s\n','% dt	   &   Error_L2	   &  Order');
-% A = [dt_array error];
-% fprintf(fileID,'%.12f   %.4e   \n',A');
-fprintf(fileID,'%.12f     %.4e      %.2f \n',[dt_array,error,order]');
-fclose(fileID);
+name=['phi_e',num2str(para.epsilon),...
+      'M',num2str(pde.M),'Nx=',num2str(N),'Ny=',num2str(N),'.txt'];
+T = table(dt_array,error);
+writetable(T,name);
 
 %% results:
 % M = 2;
