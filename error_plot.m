@@ -28,6 +28,28 @@ N=32;
 % M_array = [0 50 200 500];
 M_array = [2];
 
+% newcolors = [
+%                 0   0.447000000000000   0.741000000000000
+%    0.850000000000000   0.325000000000000   0.098000000000000
+%    0.929000000000000   0.694000000000000   0.125000000000000
+%    0.494000000000000   0.184000000000000   0.556000000000000
+%    0.466000000000000   0.674000000000000   0.188000000000000
+%    0.301000000000000   0.745000000000000   0.933000000000000
+%    0.635000000000000   0.078000000000000   0.184000000000000
+%    ];
+
+newcolors = [
+                0   0.447000000000000   0.741000000000000
+   0.850000000000000   0.325000000000000   0.098000000000000
+   0.929000000000000   0.694000000000000   0.125000000000000
+   0.301000000000000   0.745000000000000   0.933000000000000
+   0.266000000000000   0.574000000000000   0.188000000000000
+   0.494000000000000   0.184000000000000   0.556000000000000
+   0.635000000000000   0.078000000000000   0.184000000000000
+   ];
+         
+colororder(newcolors)
+
 n=0;
 for kkk = 1:length(M_array)
     figure(kkk);
@@ -42,9 +64,10 @@ for kkk = 1:length(M_array)
         error_phi = A.error;
 
         if 1 == kk
-            ax=loglog(dt_array,dt_array.^2*5000,'k:','linewidth',3);
+            ax=loglog(dt_array,dt_array*9,'k-.','linewidth',3);
             hold on;
             grid on;
+            ax=loglog(dt_array,dt_array.^2*7000,'k:','linewidth',3);
             set(gca,'XMinorGrid','on','YMinorGrid','off','XMinorTick','on','YMinorTick','off');
         end
    
@@ -71,7 +94,7 @@ for kkk = 1:length(M_array)
     %         ylim([10e-11 10e0*0.2])
     %     end
     end
-    legend({'$\mathcal{O}(\delta t^2)$', ...
+    legend({'$\mathcal{O}(\delta t)$', '$\mathcal{O}(\delta t^2)$',...
         'Error\_$\phi$: SAV-1st', 'Error\_$\phi$: SAV-BDF', ...
         'Error\_$\phi$: LM-1st', 'Error\_$\phi$: LM-BDF'}, ...
            'Interpreter','latex','Location','southeast','Fontsize',15);
