@@ -5,21 +5,22 @@ clear; clc;
 addpath('../','-begin');
 
 % Space: Domain and N
-domain.xleft   = 0;
-domain.xright  = 2*pi;
-domain.yleft   = 0;
-domain.yright  = 2*pi;
-domain.zleft   = 0;
-domain.zright  = 2*pi;
+% domain.left   = -pi;
+% domain.right  =  pi;
+% domain.bottom = -pi;
+% domain.top    =  pi;
 
-Lx = domain.xright - domain.xleft;
-Ly = domain.yright - domain.yleft;
-Lz = domain.zright - domain.zleft;
+domain.left   = 0;
+domain.right  = 2*pi;
+domain.bottom = 0;
+domain.top    = 2*pi;
+
+Lx = domain.right - domain.left;
+Ly = domain.top   - domain.bottom;
 
 N  = 32;
 Nx = N;
 Ny = N;
-Nz = N;
 
 % Parameters
 para.epsilon = 6*pi/128;
@@ -28,7 +29,7 @@ para.M = 2;
 para.S1 = 4;
 para.S2 = 4;
 para.S3 = 1;
-% 
+
 % para.S1 = 0;
 % para.S2 = 0;
 % para.S3 = 0;
@@ -40,7 +41,15 @@ if 1 == strcmp(PDE,'data1')
     dt_array = 0.0001./2.^(0:6)';
     dt_ref = 1e-7;
     para.C0 = 100; % SAV
-    pde = ex02_3D_Vesicles_data(para);
+    pde = ex02_2D_Vesicles_data(para);
+end
+
+if 1 == strcmp(PDE,'data2')
+    T = 0.0001;
+    dt_array = 0.0001./2.^(5:16)';
+    dt_ref = 1e-9;
+    para.C0 = 1000; % SAV
+    pde = ex03_2_Vesicles_data(para);
 end
 
 % Time: dt T
@@ -65,16 +74,16 @@ option.maxit = 2000;
 delete *.mat
 if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
     time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
-    CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     CAC_Vesicle_3D_LM1_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
+%     CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
+    CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
+%     CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
 end
 for k = 1:maxIt
     dt = dt_array(k);
     time = struct('T',T,'t0',t0,'dt',dt,'tsave',tsave);
-    v2 = CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     v2 = CAC_Vesicle_3D_LM1_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     v2 = CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
+%     v2 = CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
+    v2 = CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
+%     v2 = CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
 end
 
 %% Compute order of convergence
@@ -82,7 +91,7 @@ error=zeros(maxIt,1);
 order=zeros(maxIt,1);
 if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
     name=['phi_e',num2str(pde.epsilon),'M',num2str(pde.M),...
-          'Nx=',num2str(Nx),'Ny=',num2str(Ny),'Nz=',num2str(Nz),'dt=',num2str(dt_ref)];
+          'Nx=',num2str(Nx),'Ny=',num2str(Ny),'dt=',num2str(dt_ref)];
     filename=[name '.mat'];
     load(filename,'phi');
     phi_exact = phi;
@@ -92,23 +101,23 @@ end
 for k = 1:maxIt
     dt = dt_array(k);
     name=['phi_e',num2str(pde.epsilon),'M',num2str(pde.M),...
-        'Nx=',num2str(Nx),'Ny=',num2str(Ny),'Nz=',num2str(Nz),'dt=',num2str(dt)];
+        'Nx=',num2str(Nx),'Ny=',num2str(Ny),'dt=',num2str(dt)];
     filenamek=[name '.mat'];
-    load(filenamek,'phi','xx','yy','zz','hx','hy','hz');
+    load(filenamek,'phi','xx','yy','hx','hy');
 
     if ~exist('phi_exact','var') && ~exist('psi_exact','var') 
-            phi_exact = pde.exactphi(xx,yy,zz,T);
+            phi_exact = pde.exactphi(xx,yy,T);
             fprintf('Accuracy test with exact solution.\n');
     end
 
-    err    = fftn((phi_exact - phi).^2);
-    error(k,1) = sqrt(err(1,1,1)*hx*hy);   % L2
+    err    = fft2((phi_exact - phi).^2);
+    error(k,1) = sqrt(err(1,1)*hx*hy);   % L2
     clear phi;
 end
 order(2:maxIt) = log(error(1:maxIt-1)./error(2:maxIt))./log(dt_array(1:maxIt-1)./dt_array(2:maxIt));
 
 %% Display error and order
-fprintf('    dt     &   Error_L2 & Order \n');
+fprintf('    dt     &   Error_L2   & Order \n');
 for k = 1:maxIt
     fprintf('%.4e & %.4e & %.2f \n',dt_array(k),error(k),order(k));
     %         fprintf('1/%d\t& %.6e\t& %.4f %s \n',1./dt_array(k),error(k),order(k),'\\');
@@ -126,37 +135,33 @@ fprintf('\n')
 
 %% Save error and order
 name=['phi_e',num2str(para.epsilon),...
-      'M',num2str(pde.M),'S1=',num2str(pde.S1),'Nx=',num2str(Nx),'Ny=',num2str(Ny),'Nz=',num2str(Nz),'.txt'];
+      'M',num2str(pde.M),'S1=',num2str(pde.S1),'Nx=',num2str(Nx),'Ny=',num2str(Ny),'.txt'];
 T = table(dt_array,error);
 writetable(T,name);
 
 %% results:
+% lambda=-3.3147e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, timeElapsed=3.460945
 % Accuracy test with reference solution.
-% lambda=-3.3197e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=94.663636
-% Accuracy test with reference solution.
-%     dt     &   Error_L2 & Order 
-% 1.0000e-04 & 6.6204e-04 & 0.00 
-% 5.0000e-05 & 3.4036e-04 & 0.96 
-% 2.5000e-05 & 1.7236e-04 & 0.98 
-% 1.2500e-05 & 8.6474e-05 & 1.00 
-% 6.2500e-06 & 4.3049e-05 & 1.01 
-% 3.1250e-06 & 2.1214e-05 & 1.02 
-% 1.5625e-06 & 1.0266e-05 & 1.05
+%     dt     &   Error_L2   & Order 
+% 1.0000e-04 & 1.4625e-04 & 0.00 
+% 5.0000e-05 & 3.7117e-05 & 1.98 
+% 2.5000e-05 & 9.3477e-06 & 1.99 
+% 1.2500e-05 & 2.3454e-06 & 1.99 
+% 6.2500e-06 & 5.8729e-07 & 2.00 
+% 3.1250e-06 & 1.4684e-07 & 2.00 
+% 1.5625e-06 & 3.6613e-08 & 2.00 
 
-% Stabilized 
+% Stabilized
+% lambda=-3.3147e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, timeElapsed=3.533774
 % Accuracy test with reference solution.
-% lambda=-3.3197e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=86.194351
-% Accuracy test with reference solution.
-%     dt     &   Error_L2 & Order 
-% 1.0000e-04 & 4.4587e-03 & 0.00 
-% 5.0000e-05 & 2.7549e-03 & 0.69 
-% 2.5000e-05 & 1.5594e-03 & 0.82 
-% 1.2500e-05 & 8.3248e-04 & 0.91 
-% 6.2500e-06 & 4.2831e-04 & 0.96 
-% 3.1250e-06 & 2.1468e-04 & 1.00 
-% 1.5625e-06 & 1.0479e-04 & 1.03 
- 
-
+%     dt     &   Error_L2   & Order 
+% 1.0000e-04 & 1.4121e-03 & 0.00 
+% 5.0000e-05 & 3.7666e-04 & 1.91 
+% 2.5000e-05 & 9.7676e-05 & 1.95 
+% 1.2500e-05 & 2.4912e-05 & 1.97 
+% 6.2500e-06 & 6.2932e-06 & 1.98 
+% 3.1250e-06 & 1.5807e-06 & 1.99 
+% 1.5625e-06 & 3.9505e-07 & 2.00
 
 
 

@@ -28,7 +28,7 @@ para.M = 2;
 para.S1 = 4;
 para.S2 = 4;
 para.S3 = 1;
-% 
+
 % para.S1 = 0;
 % para.S2 = 0;
 % para.S3 = 0;
@@ -65,16 +65,16 @@ option.maxit = 2000;
 delete *.mat
 if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
     time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
-    CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
+%     CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
 %     CAC_Vesicle_3D_LM1_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
+    CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
 end
 for k = 1:maxIt
     dt = dt_array(k);
     time = struct('T',T,'t0',t0,'dt',dt,'tsave',tsave);
-    v2 = CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
+%     v2 = CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
 %     v2 = CAC_Vesicle_3D_LM1_SAV_1st(pde,domain,Nx,Ny,Nz,time,option);
-%     v2 = CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
+    v2 = CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option);
 end
 
 %% Compute order of convergence
@@ -132,30 +132,29 @@ writetable(T,name);
 
 %% results:
 % Accuracy test with reference solution.
-% lambda=-3.3197e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=94.663636
+% lambda=-3.3197e+01,eta=1.0000e+00,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=192.971051
 % Accuracy test with reference solution.
 %     dt     &   Error_L2 & Order 
-% 1.0000e-04 & 6.6204e-04 & 0.00 
-% 5.0000e-05 & 3.4036e-04 & 0.96 
-% 2.5000e-05 & 1.7236e-04 & 0.98 
-% 1.2500e-05 & 8.6474e-05 & 1.00 
-% 6.2500e-06 & 4.3049e-05 & 1.01 
-% 3.1250e-06 & 2.1214e-05 & 1.02 
+% 1.0000e-04 & 6.6206e-04 & 0.00 
+% 5.0000e-05 & 3.4037e-04 & 0.96 
+% 2.5000e-05 & 1.7235e-04 & 0.98 
+% 1.2500e-05 & 8.6470e-05 & 1.00 
+% 6.2500e-06 & 4.3047e-05 & 1.01 
+% 3.1250e-06 & 2.1213e-05 & 1.02 
 % 1.5625e-06 & 1.0266e-05 & 1.05
 
 % Stabilized 
-% Accuracy test with reference solution.
-% lambda=-3.3197e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=86.194351
+% lambda=-3.3197e+01,eta=1.0000e+00,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, Nz=32, timeElapsed=183.179770
 % Accuracy test with reference solution.
 %     dt     &   Error_L2 & Order 
 % 1.0000e-04 & 4.4587e-03 & 0.00 
 % 5.0000e-05 & 2.7549e-03 & 0.69 
 % 2.5000e-05 & 1.5594e-03 & 0.82 
 % 1.2500e-05 & 8.3248e-04 & 0.91 
-% 6.2500e-06 & 4.2831e-04 & 0.96 
+% 6.2500e-06 & 4.2830e-04 & 0.96 
 % 3.1250e-06 & 2.1468e-04 & 1.00 
 % 1.5625e-06 & 1.0479e-04 & 1.03 
- 
+
 
 
 

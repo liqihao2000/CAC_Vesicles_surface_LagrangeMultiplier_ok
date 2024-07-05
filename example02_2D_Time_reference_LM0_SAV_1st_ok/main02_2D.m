@@ -26,6 +26,14 @@ Ny = N;
 para.epsilon = 6*pi/128;
 para.M = 2;
 
+para.S1 = 4;
+para.S2 = 4;
+para.S3 = 1;
+
+para.S1 = 0;
+para.S2 = 0;
+para.S3 = 0;
+
 PDE = 'data1';
 
 if 1 == strcmp(PDE,'data1')
@@ -33,7 +41,7 @@ if 1 == strcmp(PDE,'data1')
     dt_array = 0.0001./2.^(0:6)';
     dt_ref = 1e-7;
     para.C0 = 100; % SAV
-    pde = ex03_1_Vesicles_data(para);
+    pde = ex02_2D_Vesicles_data(para);
 end
 
 if 1 == strcmp(PDE,'data2')
@@ -62,21 +70,21 @@ option.tol = 1e-14;
 option.tolit = 1e-11;
 option.maxit = 2000;
 
-% %% Run:
-% delete *.mat
-% if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
-%     time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
-%     CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
-% %     CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
-% %     CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
-% end
-% for k = 1:maxIt
-%     dt = dt_array(k);
-%     time = struct('T',T,'t0',t0,'dt',dt,'tsave',tsave);
-%     v2 = CAC_Vesicle_2D_LM0_SAV_BDF(pde,domain,Nx,Ny,time,option);
-% %     v2 = CAC_Vesicle_2D_LM1_SAV_BDF(pde,domain,Nx,Ny,time,option);
-% %     v2 = CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,option);
-% end
+%% Run:
+delete *.mat
+if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
+    time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
+    CAC_Vesicle_2D_LM0_SAV_1st(pde,domain,Nx,Ny,time,option);
+%     CAC_Vesicle_2D_LM1_SAV_1st(pde,domain,Nx,Ny,time,option);
+%     CAC_Vesicle_2D_LM3_LM_1st(pde,domain,Nx,Ny,time,option);
+end
+for k = 1:maxIt
+    dt = dt_array(k);
+    time = struct('T',T,'t0',t0,'dt',dt,'tsave',tsave);
+    v2 = CAC_Vesicle_2D_LM0_SAV_1st(pde,domain,Nx,Ny,time,option);
+%     v2 = CAC_Vesicle_2D_LM1_SAV_1st(pde,domain,Nx,Ny,time,option);
+%     v2 = CAC_Vesicle_2D_LM3_LM_1st(pde,domain,Nx,Ny,time,option);
+end
 
 %% Compute order of convergence
 error=zeros(maxIt,1);
@@ -127,20 +135,32 @@ fprintf('\n')
 
 %% Save error and order
 name=['phi_e',num2str(para.epsilon),...
-      'M',num2str(pde.M),'Nx=',num2str(N),'Ny=',num2str(N),'.txt'];
+      'M',num2str(pde.M),'S1=',num2str(pde.S1),'Nx=',num2str(Nx),'Ny=',num2str(Ny),'.txt'];
 T = table(dt_array,error);
 writetable(T,name);
 
 %% results:
+% lambda=-3.3147e+01,epsilon=0.147,t=0.00200/0.0020, dt=1.56e-06, Nx=32, Ny=32, timeElapsed=4.309503
 % Accuracy test with reference solution.
 %     dt     &   Error_L2   & Order 
-% 1.0000e-04 & 1.4625e-04 & 0.00 
-% 5.0000e-05 & 3.7117e-05 & 1.98 
-% 2.5000e-05 & 9.3477e-06 & 1.99 
-% 1.2500e-05 & 2.3454e-06 & 1.99 
-% 6.2500e-06 & 5.8729e-07 & 2.00 
-% 3.1250e-06 & 1.4684e-07 & 2.00 
-% 1.5625e-06 & 3.6613e-08 & 2.00 
+% 1.0000e-04 & 1.6759e-03 & 0.00 
+% 5.0000e-05 & 8.6071e-04 & 0.96 
+% 2.5000e-05 & 4.3562e-04 & 0.98 
+% 1.2500e-05 & 2.1850e-04 & 1.00 
+% 6.2500e-06 & 1.0876e-04 & 1.01 
+% 3.1250e-06 & 5.3592e-05 & 1.02 
+% 1.5625e-06 & 2.5934e-05 & 1.05 
+
+% Stabilized
+% Accuracy test with reference solution.
+%     dt     &   Error_L2   & Order 
+% 1.0000e-04 & 1.1802e-02 & 0.00 
+% 5.0000e-05 & 7.2986e-03 & 0.69 
+% 2.5000e-05 & 4.1336e-03 & 0.82 
+% 1.2500e-05 & 2.2074e-03 & 0.91 
+% 6.2500e-06 & 1.1359e-03 & 0.96 
+% 3.1250e-06 & 5.6937e-04 & 1.00 
+% 1.5625e-06 & 2.7793e-04 & 1.03 
 
 
 

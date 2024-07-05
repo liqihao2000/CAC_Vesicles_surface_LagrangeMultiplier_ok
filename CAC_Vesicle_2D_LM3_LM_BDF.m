@@ -3,7 +3,7 @@ function [phi,eta,lambda] = CAC_Vesicle_2D_LM3_LM_BDF(pde,domain,Nx,Ny,time,opti
 % Qi Li
 % 05/04/2024
 global dt kx ky kxx kyy k2 k4 hx hy Lx Ly ...
-       epsilon M C0
+       epsilon M S1 S2 S3 C0
 
 if ~exist('option','var'), option = []; end
 if ~isfield(option,'tol')
@@ -57,6 +57,9 @@ dir_data = [pde.name '/data'];
 
 epsilon = pde.epsilon;
 M       = pde.M;
+S1      = pde.S1;
+S2      = pde.S2;
+S3      = pde.S3;
 C0      = pde.C0;
 
 Lx = domain.right - domain.left;
@@ -100,6 +103,10 @@ for nt = 2:nplot
      
     phi_star = 2*phi1-phi0;  
     
+    g1 = (4*phi1-phi0)/(2*dt*M)...
+           + S1./epsilon.^3.*(phi_star - 1./(Lx.*Ly).*fun_inner(phi_star,1)) ...
+           - S2./epsilon.*(lap_diff(phi_star) - 1./(Lx.*Ly).*fun_inner(lap_diff(phi_star),1)) ...
+           + S3*epsilon.*(lap_diff(lap_diff(phi_star)) - 1./(Lx.*Ly).*fun_inner(lap_diff(lap_diff(phi_star)),1));
     if isfield(pde,'rhs') && isfield(pde,'exact')
 %         ephi   = pde.exact(xx,yy,t);
 %         ephi_t = pde.exact_t(xx,yy,t);
@@ -111,7 +118,7 @@ for nt = 2:nplot
     end
 
     % step 1
-    g1 = (4*phi1-phi0)/(2*dt*M) + rhs;
+    g1 = g1 + rhs;
     g2 = -(delta_Q(phi_star)-fun_inner(1,delta_Q(phi_star))./(Lx*Ly));
     g3 =   delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly);
 
@@ -181,11 +188,12 @@ end
 end
 
 function result = inv_A(phi)
-global dt k2 M epsilon
+global dt k2 M S1 S2 S3 epsilon
     L1 = epsilon.*k2.^2;
+    L2 = S1/epsilon.^3 - S2/epsilon*k2 + S3*epsilon.*k2.^2;
     phihat = fft2(phi);
-    r      = phihat./(3/2/dt/M + L1);
-    r(1,1) = phihat(1,1)./(3/2/dt/M + L1(1,1) - L1(1,1));
+    r      = phihat./(3/2/dt/M + L1 + L2);
+    r(1,1) = phihat(1,1)./(3/2/dt/M + L1(1,1) - L1(1,1) + L2(1,1) - L2(1,1));
     result = real(ifft2(r));
 end
 

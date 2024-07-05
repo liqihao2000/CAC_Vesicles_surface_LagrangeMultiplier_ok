@@ -1,8 +1,11 @@
-function pde = ex03_2_Vesicles_data(para)
+function pde = ex02_3D_Vesicles_data(para)
 if nargin == 0
     epsilon = 1;
     M = 1;
     C0 = 0;
+    S1 = 0;
+    S2 = 0;
+    S3 = 0;
     name = '';
 else
     if ~isstruct(para)
@@ -23,8 +26,23 @@ else
     else
         C0 = para.C0;
     end
+    if ~isfield(para,'S1') || isempty(para.S1)
+        S1 = 0;
+    else
+        S1 = para.S1;
+    end
+    if ~isfield(para,'S2') || isempty(para.S2)
+        S2 = 0;
+    else
+        S2 = para.S2;
+    end
+    if ~isfield(para,'S3') || isempty(para.S3)
+        S3 = 0;
+    else
+        S3 = para.S3;
+    end
     if ~isfield(para,'name') || isempty(para.name)
-        name = 'ex03_2_Vesicles_data';
+        name = 'ex02_3D_Vesicles_data';
     else
         name = para.name;
     end
@@ -33,15 +51,18 @@ end
 pde = struct('epsilon',epsilon, ...
     'M',M, ...
     'C0',C0, ...
+    'S1',S1, ...
+    'S2',S2, ...
+    'S3',S3, ...
     'init',@init, ...
     'name',name);
 
-    function z = init(x,y)
-        rl =[0.28*pi,0.28*pi];
-        xl = [pi,pi];
-        yl = [1.29*pi, -0.29*pi+pi];
-        
-        z =  tanh((rl(1)-sqrt((x-xl(1)).^2+(y-yl(1)).^2))./(sqrt(2)*epsilon)) ...
-            +tanh((rl(2)-sqrt((x-xl(2)).^2+(y-yl(2)).^2))./(sqrt(2)*epsilon))+1;
+    function z = init(x,y,z)
+        z = exact(x,y,z,0);
+    end
+
+    function z = exact(x,y,z,t)
+        z = exp(-t).*sin(2.*x).*cos(2*y).*cos(2*z)./8;
+%         z = (sin(2*x).*sin(2*y)/4+0.48).*(1-sin(t).^2/2);
     end
 end

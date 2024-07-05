@@ -1,9 +1,9 @@
-function [phi, u] = CAC_Vesicle_3D_LM0_SAV_BDF(pde,domain,Nx,Ny,Nz,time,option)
+function [phi,eta,lambda] = CAC_Vesicle_3D_LM3_LM_1st(pde,domain,Nx,Ny,Nz,time,option)
 % Solve 3D Vesicle model
 % Qi Li
 % 07/04/2024
 global dt kx ky kz kxx kyy kzz k2 k4 hx hy hz Lx Ly Lz ...
-       epsilon M C0
+       epsilon M S1 S2 S3 C0
 
 if ~exist('option','var'), option = []; end
 if ~isfield(option,'tol')
@@ -40,9 +40,12 @@ if 1 == option.energyflag
     out2 = fopen(figname_energy,'w');
 end
 
-tol = option.tol;
-tolit = option.tolit;
-maxit = option.maxit;
+%% options for fsolve
+opts = optimoptions('fsolve','Display','off',...
+                       'StepTolerance', option.tol, ...
+                       'FunctionTolerance',option.tolit,...
+                       'MaxIterations',option.maxit);
+
 
 %%
 T  = time.T;
@@ -55,6 +58,9 @@ dir_data = [pde.name '/data'];
 
 epsilon = pde.epsilon;
 M       = pde.M;
+S1      = pde.S1;
+S2      = pde.S2;
+S3      = pde.S3;
 C0      = pde.C0;
 
 Lx = domain.xright - domain.xleft;
@@ -88,75 +94,78 @@ k_z1 = 1i*[0:Nz/2-1 0 -Nz/2+1:-1]*(2*pi/Lz);
 
 [xx,yy,zz] = ndgrid(x,y,z);
 phi0 = pde.init(xx,yy,zz);
+phi00 = phi0;
 nfigure =1;
+
+%% plot initial value
+nfigure =1;
+if 1 == option.saveflag
+    if ~exist(dir_data,'dir')
+        mkdir(dir_data);
+    end
+    ss1 = [dir_data '/phi_t=' num2str(t) '.txt'];
+    writematrix(phi0,ss1,'Delimiter',' ');
+    writematrix(xx,[dir_data '/X.txt'],'Delimiter',' ');
+    writematrix(yy,[dir_data '/Y.txt'],'Delimiter',' ');
+    writematrix(zz,[dir_data '/Y.txt'],'Delimiter',' ');
+end
+if 1 == option.plotflag
+    if 1 == option.saveflag
+        showsolution_2D(nfigure,xx,yy,phi0,t,dir_fig);
+    else
+        showsolution_2D(nfigure,xx,yy,phi0,t);
+    end
+end
 
 nplot = round((T-t)/dt);
 nsave = round(tsave/dt);
 
 tstart = tic;
 
-u0 = fun_u_init(phi0);
+% Initial energy
+if 1 == option.energyflag
+    calculate_energy1(out1,out2,hx,hy,hz,t,phi0,r0);
+end
 
-%% initialization phi 1
-time1 = time; time1.T = dt;
-[phi1,u1] = CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time1,option);
-
-t = t+dt;
-
-for nt = 2:nplot
+for nt = 1:nplot
     t = t+dt;
      
-    phi_star = 2*phi1-phi0;    
+    phi_star = phi0;    
     
     % step 1
-    H = fun_H(phi_star);
-    g = (4*u1-u0)/3 - 1/2*fun_inner(H,(4*phi1-phi0)/3);
-    
-    g1 = (4*phi1-phi0)/2/dt/M...
+    g1 = phi0/dt/M...
            + S1./epsilon.^3.*(phi_star - 1./(Lx.*Ly.*Lz).*fun_inner(phi_star,1)) ...
            - S2./epsilon.*(lap_diff(phi_star) - 1./(Lx.*Ly.*Lz).*fun_inner(lap_diff(phi_star),1)) ...
-           + S3*epsilon.*(lap_diff(lap_diff(phi_star)) - 1./(Lx.*Ly.*Lz).*fun_inner(lap_diff(lap_diff(phi_star)),1))...
-           - H.*g;
+           + S3*epsilon.*(lap_diff(lap_diff(phi_star)) - 1./(Lx.*Ly.*Lz).*fun_inner(lap_diff(lap_diff(phi_star)),1));
+
     if isfield(pde,'rhs') && isfield(pde,'exact')
-%         ephi   = pde.exact(xx,yy,zz,t);
-%         ephi_t = pde.exact_t(xx,yy,zz,t);
-%         emu   = epsilon*lap_diff(lap_diff(ephi)) + fun_q(ephi);
+%         ephi   = pde.exact(xx,yy,t);
+%         ephi_t = pde.exact_t(xx,yy,t);
+%         emu   = epsilon*lap_diff(lap_diff(ephi)) + delta_Q(ephi);
 %         tmp  = ephi_t./M - lap_diff(emu);
         tmp = pde.rhs(xx,yy,zz,t);
         g1 = g1 + tmp;
     end
-    g2 = delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly*Lz);
+    g2 = -(delta_Q(phi_star)-fun_inner(1,delta_Q(phi_star))./(Lx*Ly*Lz));
+    g3 =   delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly*Lz);
 
-    psiA = inv_A(H);
-    psiB = inv_A(g1);  
-    psiC = inv_A(g2); 
+    phi1_new = inv_A(g1);
+    phi2_new = inv_A(g2);
+    phi3_new = inv_A(g3);
 
-    b1 = fun_inner(H, psiB);
-    b2 = fun_inner(H, psiC);
-    
-    mu = 0.5*fun_inner(H,psiA);
-    
-    X = b1./(mu + 1);
-    Y = b2./(mu + 1);
-   
     % Step 3
-    phi1_new = -1/2*X.*psiA + psiB;
-    phi2_new = -1/2*Y.*psiA + psiC;
+    lambda = fun_inner(delta_B(phi_star),phi0-phi1_new-phi2_new) ./ fun_inner(delta_B(phi_star),phi3_new);
+
+    lambda = fsolve(@(lambda)non_fun_lambda(lambda,phi1_new,phi2_new,phi3_new,phi00),lambda,opts);
+
+    eta_initial = 1; 
+    eta = fsolve(@(eta)non_fun_eta(eta,lambda,phi1_new,phi2_new,phi3_new,phi0),eta_initial,opts);
     
-    u1_new = g + 1/2*X;
-    u2_new = 1/2*Y;
-
-    lambda = fun_inner(delta_B(phi_star),4*phi1-phi0-3*phi1_new) ./ fun_inner(delta_B(phi_star),3*phi2_new);
-
-%     lambda = 0;
-    phi = phi1_new + lambda*phi2_new; 
-    u   = u1_new   + lambda*u2_new; 
+    % Step 4
+    phi = phi1_new + eta*phi2_new + lambda*phi3_new; 
     
     %% update phi0
-    phi0 = phi1; 
-    phi1 = phi;  
-    u0 = u1; 
-    u1 = u;
+    phi0 = phi;  
     
     if 1 == option.energyflag
         calculate_energy1(out1,out2,hx,hy,hz,t,phi0,r0);
@@ -165,7 +174,7 @@ for nt = 2:nplot
     if  0 == mod(nt,nsave)
         if 1 == option.printflag
             timeElapsed = toc(tstart);
-            fprintf('lambda=%.4e,epsilon=%.3f,t=%.5f/%.4f, dt=%.2e, Nx=%d, Ny=%d, Nz=%d, timeElapsed=%f\n',lambda,epsilon,t,T,dt,Nx,Ny,Nz,timeElapsed);
+            fprintf('lambda=%.4e,eta=%.4e,epsilon=%.3f,t=%.5f/%.4f, dt=%.2e, Nx=%d, Ny=%d, Nz=%d, timeElapsed=%f\n',lambda,eta,epsilon,t,T,dt,Nx,Ny,Nz,timeElapsed);
         end
         
         if 1 == option.saveflag
@@ -204,33 +213,13 @@ if 1 == option.energyflag
 end
 end
 
-function result = fun_u_init(phi)
-global C0
-if fun_inner(1,fun_Q(phi)) + C0 <0
-    disp("Root < 0");
-    return;
-end
-result  = sqrt(fun_inner(1,fun_Q(phi)) + C0);
-end
-
-function result = fun_H(phi)
-global C0 Lx Ly Lz hx hy hz
-if fun_inner(1,fun_Q(phi)) + C0 <0
-    disp("Root < 0");
-    return;
-end
-H = fun_q(phi)./sqrt(fun_inner(1,fun_Q(phi)) + C0);
-H_bar = fftn(H);
-result = H - 1./(Lx*Ly*Lz).*H_bar(1,1,1)*hx*hy*hz;
-end
-
 function result = inv_A(phi)
-global dt k2 M S1 S2 S3 epsilon
+global dt k2 M epsilon Lx Ly Lz S1 S2 S3
     L1 = epsilon.*k2.^2;
-    L2 = S1/epsilon.^3 - S2/epsilon*k2 + S3.*epsilon.*k2.^2;
+    L2 = S1/epsilon.^3 - S2/epsilon*k2 + S3*epsilon.*k2.^2;
     phihat = fftn(phi);
-    r      = phihat./(3/2/dt/M + L1 + L2);
-    r(1,1,1) = phihat(1,1,1)./(3/2/dt/M + L1(1,1,1) - L1(1,1,1)+ L2(1,1,1) - L2(1,1,1));
+    r      = phihat./(1/dt/M + L1 + L2);
+    r(1,1,1) = phihat(1,1,1)./(1/dt/M + L1(1,1,1) + L2(1,1,1) - 1/(Lx*Ly*Lz).*L1(1,1,1).*Lx.*Ly.*Lz - 1/(Lx*Ly*Lz).*L2(1,1,1).*Lx.*Ly.*Lz);
     result = real(ifftn(r));
 end
 
@@ -242,9 +231,9 @@ global epsilon
     result = result*epsilon/2;
 end
 
-function result = fun_q(phi)
+function result = delta_Q(phi)
 global epsilon
-    div_term = diff_x(phi.^2.*diff_x(phi)) + diff_y(phi.^2.*diff_y(phi)) + diff_z(phi.^2.*diff_z(phi));
+    div_term = diff_x(phi.^2.*diff_x(phi)) + diff_y(phi.^2.*diff_y(phi))+ diff_z(phi.^2.*diff_z(phi));
     result = 6./epsilon.*(phi.*grad_square(phi) - div_term) ...
              + 2/epsilon.*lap_diff(phi) ...
              + 1/epsilon.^3.*f(phi).*f_der(phi);
@@ -309,9 +298,8 @@ function result = F(phi)
 end
 
 function result = B(phi)
-global hx hy hz epsilon
-    r = fftn(epsilon./2.*grad_square(phi)+1/epsilon.*F(phi));
-    result = r(1,1,1)*hx*hy*hz;
+global epsilon
+    result = fun_inner(1,epsilon./2.*grad_square(phi)+1/epsilon.*F(phi));
 end
 
 function result = delta_B(phi)
@@ -319,4 +307,17 @@ global epsilon
     result = -epsilon*lap_diff(phi) + 1/epsilon.*f(phi);
 end
 
+function r = non_fun_lambda(lambda,phi_new1,phi_new2,phi_new3,phi0)
+    left = B(phi_new1+phi_new2+lambda.*phi_new3);
+    right = B(phi0);
+    r = left - right;
+end
+
+function r = non_fun_eta(eta,lambda,phi_new1,phi_new2,phi_new3,phi0)
+    left = fun_inner(1,fun_Q(phi_new1+eta.*phi_new2+lambda.*phi_new3)-fun_Q(phi0));
+    right = eta.*fun_inner(delta_Q(phi0),phi_new1+eta.*phi_new2+lambda.*phi_new3-phi0)...
+            -lambda.*fun_inner(delta_B(phi0),phi_new1+eta.*phi_new2+lambda.*phi_new3-phi0);
+           
+    r = left - right;
+end
 

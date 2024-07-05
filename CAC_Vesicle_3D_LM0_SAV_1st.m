@@ -3,7 +3,7 @@ function [phi, u0] = CAC_Vesicle_3D_LM0_SAV_1st(pde,domain,Nx,Ny,Nz,time,option)
 % Qi Li
 % 07/03/2024
 global dt kx ky kz kxx kyy kzz k2 k4 hx hy hz Lx Ly Lz ...
-       epsilon M C0
+       epsilon M S1 S2 S3 C0
 
 if ~exist('option','var'), option = []; end
 if ~isfield(option,'tol')
@@ -55,30 +55,42 @@ dir_data = [pde.name '/data'];
 
 epsilon = pde.epsilon;
 M       = pde.M;
+S1      = pde.S1;
+S2      = pde.S2;
+S3      = pde.S3;
 C0      = pde.C0;
 
-Lx = domain.right - domain.left;
-Ly = domain.top   - domain.bottom;
+Lx = domain.xright - domain.xleft;
+Ly = domain.yright - domain.yleft;
+Lz = domain.zright - domain.zleft;
 hx = Lx/Nx;
 hy = Ly/Ny;
-% x  = domain.left   + hx*(1:Nx);
-% y  = domain.bottom + hy*(1:Ny);
-x  = domain.left   + hx*(0:Nx-1);
-y  = domain.bottom + hy*(0:Ny-1);
+hz = Lz/Nz;
+x  = domain.xleft  + hx*(0:Nx-1);
+y  = domain.yleft  + hy*(0:Ny-1);
+z  = domain.zleft  + hz*(0:Nz-1);
 
-% [k_x,k_y,kx,ky,kxx,kyy,k2,k4] = prepare_fft2_v2(Lx,Ly,Nx,Ny);
+% Fourier spectral 
 k_x = 1i*[0:Nx/2 -Nx/2+1:-1]*(2*pi/Lx);
 k_y = 1i*[0:Ny/2 -Ny/2+1:-1]*(2*pi/Ly);
-[kx, ky] = ndgrid(k_x,k_y);
-
+k_z = 1i*[0:Nz/2 -Nz/2+1:-1]*(2*pi/Lz);
+% [kx, ky, kz] = ndgrid(k_x,k_y,k_z);
 k2x = k_x.^2;
 k2y = k_y.^2;
-[kxx, kyy] = ndgrid(k2x,k2y);
-k2 = kxx + kyy;
+k2z = k_z.^2;
+[kxx, kyy, kzz] = ndgrid(k2x,k2y,k2z);
+k2 = kxx + kyy + kzz;
 k4 = k2.^2;
+% Furthermore, it is important to make the highest frequency N/2 to zero 
+% in odd derivatives due to the symmetry.
+k_x1 = 1i*[0:Nx/2-1 0 -Nx/2+1:-1]*(2*pi/Lx);
+k_y1 = 1i*[0:Ny/2-1 0 -Ny/2+1:-1]*(2*pi/Ly);
+k_z1 = 1i*[0:Nz/2-1 0 -Nz/2+1:-1]*(2*pi/Lz);
+[kx, ky, kz] = ndgrid(k_x1,k_y1,k_z1);
 
-[xx,yy] = ndgrid(x,y);
-phi0 = pde.init(xx,yy);
+
+[xx,yy,zz] = ndgrid(x,y,z);
+phi0 = pde.init(xx,yy,zz);
 nfigure =1;
 
 %% plot initial value
@@ -91,6 +103,7 @@ if 1 == option.saveflag
     writematrix(phi0,ss1,'Delimiter',' ');
     writematrix(xx,[dir_data '/X.txt'],'Delimiter',' ');
     writematrix(yy,[dir_data '/Y.txt'],'Delimiter',' ');
+    writematrix(zz,[dir_data '/Y.txt'],'Delimiter',' ');
 end
 if 1 == option.plotflag
     if 1 == option.saveflag
@@ -110,7 +123,7 @@ u0 = fun_u_init(phi0);
 
 % Initial energy
 if 1 == option.energyflag
-    calculate_energy1(out1,out2,hx,hy,t,phi0,r0);
+    calculate_energy1(out1,out2,hx,hy,hz,t,phi0,r0);
 end
 
 for nt = 1:nplot
@@ -122,16 +135,20 @@ for nt = 1:nplot
     H = fun_H(phi_star);
     g = u0 - 1/2*fun_inner(H,phi0);
     
-    g1 = phi0/dt/M - H.*g;
+    g1 = phi0/dt/M...
+           + S1./epsilon.^3.*(phi_star - 1./(Lx.*Ly.*Lz).*fun_inner(phi_star,1)) ...
+           - S2./epsilon.*(lap_diff(phi_star) - 1./(Lx.*Ly.*Lz).*fun_inner(lap_diff(phi_star),1)) ...
+           + S3*epsilon.*(lap_diff(lap_diff(phi_star)) - 1./(Lx.*Ly.*Lz).*fun_inner(lap_diff(lap_diff(phi_star)),1))...
+           - H.*g;
     if isfield(pde,'rhs') && isfield(pde,'exact')
 %         ephi   = pde.exact(xx,yy,t);
 %         ephi_t = pde.exact_t(xx,yy,t);
 %         emu   = epsilon*lap_diff(lap_diff(ephi)) + fun_q(ephi);
 %         tmp  = ephi_t./M - lap_diff(emu);
-        tmp = pde.rhs(xx,yy,t);
+        tmp = pde.rhs(xx,yy,zz,t);
         g1 = g1 + tmp;
     end
-    g2 = delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly);
+    g2 = delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly*Lz);
 
     psiA = inv_A(H);
     psiB = inv_A(g1);  
@@ -163,13 +180,13 @@ for nt = 1:nplot
     u0 = u;
     
     if 1 == option.energyflag
-        calculate_energy1(out1,out2,hx,hy,t,phi0,r0);
+        calculate_energy1(out1,out2,hx,hy,hz,t,phi0,r0);
     end
 
     if  0 == mod(nt,nsave)
         if 1 == option.printflag
             timeElapsed = toc(tstart);
-            fprintf('lambda=%.4e,epsilon=%.3f,t=%.5f/%.4f, dt=%.2e, Nx=%d, Ny=%d, timeElapsed=%f\n',lambda,epsilon,t,T,dt,Nx,Ny,timeElapsed);
+            fprintf('lambda=%.4e,epsilon=%.3f,t=%.5f/%.4f, dt=%.2e, Nx=%d, Ny=%d, Nz=%d, timeElapsed=%f\n',lambda,epsilon,t,T,dt,Nx,Ny,Nz,timeElapsed);
         end
         
         if 1 == option.saveflag
@@ -197,9 +214,9 @@ end
 
 if 1 == option.savefinal
     name=['phi_e',num2str(pde.epsilon),'M',num2str(pde.M),...
-          'Nx=',num2str(Nx),'Ny=',num2str(Ny),'dt=',num2str(dt)];    
+          'Nx=',num2str(Nx),'Ny=',num2str(Ny),'Nz=',num2str(Nz),'dt=',num2str(dt)];    
     filename=[name '.mat'];
-    save(filename,'epsilon','xx','yy','hx','hy','Nx','Ny','dt','T','phi','domain');
+    save(filename,'epsilon','xx','yy','zz','hx','hy','hz','Nx','Ny','Nz','dt','T','phi','domain');
 end
 
 if 1 == option.energyflag
@@ -218,23 +235,24 @@ result  = sqrt(fun_inner(1,fun_Q(phi)) + C0);
 end
 
 function result = fun_H(phi)
-global C0 Lx Ly hx hy
+global C0 Lx Ly Lz hx hy hz
 if fun_inner(1,fun_Q(phi)) + C0 <0
     disp("Root < 0");
     return;
 end
 H = fun_q(phi)./sqrt(fun_inner(1,fun_Q(phi)) + C0);
-H_bar = fft2(H);
-result = H - 1./(Lx*Ly).*H_bar(1,1)*hx*hy;
+H_bar = fftn(H);
+result = H - 1./(Lx*Ly*Lz).*H_bar(1,1,1)*hx*hy*hz;
 end
 
 function result = inv_A(phi)
-global dt k2 M epsilon
+global dt k2 M epsilon Lx Ly Lz S1 S2 S3
     L1 = epsilon.*k2.^2;
-    phihat = fft2(phi);
-    r      = phihat./(1/dt/M + L1);
-    r(1,1) = phihat(1,1)./(1/dt/M + L1(1,1) - L1(1,1));
-    result = real(ifft2(r));
+    L2 = S1/epsilon.^3 - S2/epsilon*k2 + S3*epsilon.*k2.^2;
+    phihat = fftn(phi);
+    r      = phihat./(1/dt/M + L1 + L2);
+    r(1,1,1) = phihat(1,1,1)./(1/dt/M + L1(1,1,1) + L2(1,1,1) - 1/(Lx*Ly*Lz).*L1(1,1,1).*Lx.*Ly.*Lz - 1/(Lx*Ly*Lz).*L2(1,1,1).*Lx.*Ly.*Lz);
+    result = real(ifftn(r));
 end
 
 function result = fun_Q(phi)
@@ -247,29 +265,29 @@ end
 
 function result = fun_q(phi)
 global epsilon
-    div_term = diff_x(phi.^2.*diff_x(phi)) + diff_y(phi.^2.*diff_y(phi));
+    div_term = diff_x(phi.^2.*diff_x(phi)) + diff_y(phi.^2.*diff_y(phi)) + diff_z(phi.^2.*diff_z(phi));
     result = 6./epsilon.*(phi.*grad_square(phi) - div_term) ...
              + 2/epsilon.*lap_diff(phi) ...
              + 1/epsilon.^3.*f(phi).*f_der(phi);
 end
 
 function r = fun_inner(f,g)
-global hx hy
-    r1 = fft2(f.*g);
-    r = r1(1,1)*hx*hy;
+global hx hy hz
+    r1 = fftn(f.*g);
+    r = r1(1,1,1)*hx*hy*hz;
 end
 
-function [] = calculate_energy1(out1,out2,hx,hy,t,phi,r)
+function [] = calculate_energy1(out1,out2,hx,hy,hz,t,phi,r)
 global C0
-energy_linear = fft2(energyoperatorL(phi));
-energy_nonlinear = fft2(F(phi));
+energy_linear = fftn(energyoperatorL(phi));
+energy_nonlinear = fftn(F(phi));
 
-energy_original = energy_linear(1,1)*hx*hy + energy_nonlinear(1,1)*hx*hy;
+energy_original = energy_linear(1,1,1)*hx*hy*hz + energy_nonlinear(1,1,1)*hx*hy*hz;
 
-energy_modified = energy_linear(1,1)*hx*hy + r.^2 - C0;
+energy_modified = energy_linear(1,1,1)*hx*hy*hz + r.^2 - C0;
 
-mass    = fft2(phi);
-mass    = hx*hy*mass(1,1);
+mass    = fftn(phi);
+mass    = mass(1,1,1)*hx*hy*hz;
 
 fprintf(out1,'%14.6e  %.8f \n',t,mass);
 fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_modified);
@@ -277,21 +295,26 @@ end
 
 function lap=lap_diff(phi)
 global k2
-    lap=real(ifft2((k2.*fft2(phi))));
+    lap=real(ifftn((k2.*fftn(phi))));
 end
 
 function lap=diff_x(phi)
 global kx
-    lap=real(ifft2((kx.*fft2(phi))));
+    lap=real(ifftn((kx.*fftn(phi))));
 end
 
 function lap=diff_y(phi)
 global ky
-    lap=real(ifft2((ky.*fft2(phi))));
+    lap=real(ifftn((ky.*fftn(phi))));
+end
+
+function lap=diff_z(phi)
+global kz
+    lap=real(ifftn((kz.*fftn(phi))));
 end
 
 function result = grad_square(phi)
-    result = diff_x(phi).^2 + diff_y(phi).^2;
+    result = diff_x(phi).^2 + diff_y(phi).^2 + diff_z(phi).^2;
 end
 
 function result = f_der(phi)
@@ -307,9 +330,9 @@ function result = F(phi)
 end
 
 function result = B(phi)
-global hx hy epsilon
-    r = fft2(epsilon./2.*grad_square(phi)+1/epsilon.*F(phi));
-    result = r(1,1)*hx*hy;
+global hx hy hz epsilon
+    r = fftn(epsilon./2.*grad_square(phi)+1/epsilon.*F(phi));
+    result = r(1,1,1)*hx*hy*hz;
 end
 
 function result = delta_B(phi)
