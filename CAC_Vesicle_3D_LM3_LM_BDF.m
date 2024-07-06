@@ -184,7 +184,7 @@ for nt = 2:nplot
 end
 
 if 1 == option.savefinal
-    name=['phi_e',num2str(pde.epsilon),'M',num2str(pde.M),...
+    name=['phi_e',num2str(pde.epsilon),'M',num2str(pde.M),'S1=',num2str(pde.S1),...
           'Nx=',num2str(Nx),'Ny=',num2str(Ny),'Nz=',num2str(Nz),'dt=',num2str(dt)];    
     filename=[name '.mat'];
     save(filename,'epsilon','xx','yy','zz','hx','hy','hz','Nx','Ny','Nz','dt','T','phi','domain');
