@@ -34,8 +34,8 @@ if ~isfield(option,'energyflag')
     option.energyflag = 0;   
 end
 if 1 == option.energyflag
-    figname_mass = [pde.name,num2str(time.dt),'_mass.txt'];
-    figname_energy = [pde.name,num2str(time.dt),'_energy.txt'];      
+    figname_mass = [pde.name,'S1=',num2str(pde.S1),'_dt=',num2str(time.dt),'_mass.txt'];
+    figname_energy = [pde.name,'S1=',num2str(pde.S1),'_dt=',num2str(time.dt),'_energy.txt'];      
     out1 = fopen(figname_mass,'w');
     out2 = fopen(figname_energy,'w');
 end

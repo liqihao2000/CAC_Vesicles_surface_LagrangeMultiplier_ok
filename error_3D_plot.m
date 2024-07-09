@@ -1,6 +1,6 @@
 % Error plot
 clear; clc;
-close all;
+% close all;
 format long;
 
 dirname={ 'example02_3D_Time_reference_LM0_SAV_1st_ok/'
@@ -46,7 +46,7 @@ for kkk = 1:2
         para.S3 = 1;
     end
 
-    figure(kkk);
+    figure(kkk+2);
     
     colororder(newcolors)
     
