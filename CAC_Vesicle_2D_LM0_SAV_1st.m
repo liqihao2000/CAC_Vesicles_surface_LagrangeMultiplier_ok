@@ -34,8 +34,8 @@ if ~isfield(option,'energyflag')
     option.energyflag = 0;   
 end
 if 1 == option.energyflag
-    figname_mass = [pde.name,'_dt_',num2str(time.dt),'_mass.txt'];
-    figname_energy = [pde.name,'_dt_',num2str(time.dt),'_energy.txt'];     
+    figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_mass.txt'];
+    figname_energy = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_energy.txt'];     
     out1 = fopen(figname_mass,'w');
     out2 = fopen(figname_energy,'w');
 end
@@ -277,8 +277,9 @@ energy_original = energy_linear + energy_nonlinear;
 energy_modified = energy_linear + u.^2 - C0;
 
 mass    = fun_inner(1,phi);
+surface = B(phi);
 
-fprintf(out1,'%14.6e  %.8f \n',t,mass);
+fprintf(out1,'%14.6e  %.10f %.10f \n',t,mass,surface);
 fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_modified);
 end
 

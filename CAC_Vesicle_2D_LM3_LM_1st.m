@@ -34,8 +34,8 @@ if ~isfield(option,'energyflag')
     option.energyflag = 0;   
 end
 if 1 == option.energyflag
-    figname_mass = [pde.name,num2str(time.dt),'_mass.txt'];
-    figname_energy = [pde.name,num2str(time.dt),'_energy.txt'];      
+    figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_mass.txt'];
+    figname_energy = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_energy.txt'];     
     out1 = fopen(figname_mass,'w');
     out2 = fopen(figname_energy,'w');
 end
@@ -112,11 +112,9 @@ nsave = round(tsave/dt);
 
 tstart = tic;
 
-u0 = fun_u_init(phi0);
-
 % Initial energy
 if 1 == option.energyflag
-    calculate_energy1(out1,out2,hx,hy,t,phi0,r0);
+    calculate_energy(out1,out2,t,phi0);
 end
 
 for nt = 1:nplot
@@ -161,7 +159,7 @@ for nt = 1:nplot
     phi0 = phi;  
     
     if 1 == option.energyflag
-        calculate_energy1(out1,out2,hx,hy,t,phi0,r0);
+        calculate_energy(out1,out2,t,phi);
     end
 
     if  0 == mod(nt,nsave)
@@ -206,15 +204,6 @@ if 1 == option.energyflag
 end
 end
 
-function result = fun_u_init(phi)
-global C0
-if fun_inner(1,fun_Q(phi)) + C0 <0
-    disp("Root < 0");
-    return;
-end
-result  = sqrt(fun_inner(1,fun_Q(phi)) + C0);
-end
-
 function result = inv_A(phi)
 global dt k2 M S1 S2 S3 epsilon
     L1 = epsilon.*k2.^2;
@@ -247,20 +236,19 @@ global hx hy
     r = r1(1,1)*hx*hy;
 end
 
-function [] = calculate_energy1(out1,out2,hx,hy,t,phi,r)
-global C0
-energy_linear = fft2(energyoperatorL(phi));
-energy_nonlinear = fft2(F(phi));
+function [] = calculate_energy(out1,out2,t,phi)
+global epsilon
+energy_linear = fun_inner(1,1./2.*epsilon.*lap_diff(phi).^2);
+energy_nonlinear = fun_inner(1,fun_Q(phi));
 
-energy_original = energy_linear(1,1)*hx*hy + energy_nonlinear(1,1)*hx*hy;
+energy_original = energy_linear + energy_nonlinear;
+energy_original_discrete = energy_original;
 
-energy_modified = energy_linear(1,1)*hx*hy + r.^2 - C0;
+mass    = fun_inner(1,phi);
+surface = B(phi);
 
-mass    = fft2(phi);
-mass    = hx*hy*mass(1,1);
-
-fprintf(out1,'%14.6e  %.8f \n',t,mass);
-fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_modified);
+fprintf(out1,'%14.6e  %.10f %.10f \n',t,mass,surface);
+fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_original_discrete);
 end
 
 function lap=lap_diff(phi)

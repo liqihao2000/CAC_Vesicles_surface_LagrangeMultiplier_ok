@@ -1,11 +1,8 @@
-function pde = ex02_Vesicles_data(para)
+function pde = ex12_Vesicles_data_twoO_o(para)
 if nargin == 0
     epsilon = 1;
     M = 1;
     C0 = 0;
-    beta_m = 1;
-    M1  = 0;
-    M2 = 0;
     S1 = 0;
     S2 = 0;
     S3 = 0;
@@ -29,21 +26,6 @@ else
     else
         C0 = para.C0;
     end
-    if ~isfield(para,'beta_m') || isempty(para.beta_m)
-        beta_m = 1;
-    else
-        beta_m = para.beta_m;
-    end
-    if ~isfield(para,'M1') || isempty(para.M1)
-        M1 = 0;
-    else
-        M1 = para.M1;
-    end
-    if ~isfield(para,'M2') || isempty(para.M2)
-        M2 = 0;
-    else
-        M2 = para.M2;
-    end
     if ~isfield(para,'S1') || isempty(para.S1)
         S1 = 0;
     else
@@ -60,7 +42,7 @@ else
         S3 = para.S3;
     end
     if ~isfield(para,'name') || isempty(para.name)
-        name = 'ex02_Vesicles_data';
+        name = 'ex12_Vesicles_data_twoO_o';
     else
         name = para.name;
     end
@@ -69,9 +51,6 @@ end
 pde = struct('epsilon',epsilon, ...
     'M',M, ...
     'C0',C0, ...
-    'beta_m', beta_m, ... 
-    'M1',M1, ...
-    'M2',M2, ...
     'S1',S1, ...
     'S2',S2, ...
     'S3',S3, ...
@@ -80,13 +59,11 @@ pde = struct('epsilon',epsilon, ...
     'name',name);
 
     function z = init(x,y)
-        rl =[0.28*pi,0.28*pi];
+        rl =[0.35*pi,0.15*pi];
         xl = [pi,pi];
-        yl = [-0.29*pi, 0.29*pi];
+        yl = [-0.29*pi, 0.26*pi] + pi;
         
         z =  tanh((rl(1)-sqrt((x-xl(1)).^2+(y-yl(1)).^2))./(sqrt(2)*epsilon)) ...
             +tanh((rl(2)-sqrt((x-xl(2)).^2+(y-yl(2)).^2))./(sqrt(2)*epsilon))+1;
     end
-
-
 end
