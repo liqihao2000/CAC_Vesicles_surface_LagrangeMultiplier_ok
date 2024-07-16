@@ -34,10 +34,10 @@ if ~isfield(option,'energyflag')
     option.energyflag = 0;   
 end
 if 1 == option.energyflag
-    figname_mass = [pde.name,num2str(time.dt),'_mass.txt'];
-    figname_energy = [pde.name,num2str(time.dt),'_energy.txt'];      
-    out1 = fopen(figname_mass,'w');
-    out2 = fopen(figname_energy,'w');
+    figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_mass.txt'];
+    figname_energy = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(time.dt),'_energy.txt'];     
+    out1 = fopen(figname_mass,'a');
+    out2 = fopen(figname_energy,'a');
 end
 
 %% options for fsolve
@@ -90,7 +90,6 @@ k_x1 = 1i*[0:Nx/2-1 0 -Nx/2+1:-1]*(2*pi/Lx);
 k_y1 = 1i*[0:Ny/2-1 0 -Ny/2+1:-1]*(2*pi/Ly);
 k_z1 = 1i*[0:Nz/2-1 0 -Nz/2+1:-1]*(2*pi/Lz);
 [kx, ky, kz] = ndgrid(k_x1,k_y1,k_z1);
-
 
 [xx,yy,zz] = ndgrid(x,y,z);
 phi0 = pde.init(xx,yy,zz);
@@ -151,7 +150,7 @@ for nt = 2:nplot
     phi1 = phi; 
     
     if 1 == option.energyflag
-        calculate_energy1(out1,out2,hx,hy,hz,t,phi0,r0);
+        calculate_energy(out1,out2,t,phi1,phi0)
     end
 
     if  0 == mod(nt,nsave)
@@ -228,20 +227,30 @@ global hx hy hz
     r = r1(1,1,1)*hx*hy*hz;
 end
 
-function [] = calculate_energy1(out1,out2,hx,hy,hz,t,phi,r)
-global C0
-energy_linear = fftn(energyoperatorL(phi));
-energy_nonlinear = fftn(F(phi));
+function [] = calculate_energy(out1,out2,t,phi1,phi0)
+global epsilon S1 S2 S3
 
-energy_original = energy_linear(1,1,1)*hx*hy*hz + energy_nonlinear(1,1,1)*hx*hy*hz;
+energy_linear = fun_inner(1,1./2.*epsilon.*lap_diff(phi1).^2);
+energy_nonlinear = fun_inner(1,fun_Q(phi1));
+energy_original = energy_linear + energy_nonlinear;
 
-energy_modified = energy_linear(1,1,1)*hx*hy*hz + r.^2 - C0;
+phi_star = 2*phi1-phi0;
 
-mass    = fftn(phi);
-mass    = mass(1,1,1)*hx*hy*hz;
+energy_S = S1./2./epsilon.^3.*(phi1 - phi0).^2 ...
+         + S2./2./epsilon.*grad_square(phi1 - phi0) ...
+         + S3.*epsilon./2.*lap_diff(phi1 - phi0).^2;
+energy_S = fun_inner(1,energy_S);
 
-fprintf(out1,'%14.6e  %.8f \n',t,mass);
-fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_modified);
+energy_linear_bdf = fun_inner(1,epsilon/4.*(lap_diff(phi1).^2+lap_diff(phi_star).^2));
+energy_phi1 = fun_inner(1,fun_Q(phi1));
+energy_phi0 = fun_inner(1,fun_Q(phi0));
+energy_original_discrete = energy_linear_bdf + energy_S + (3*energy_phi1 - energy_phi0)/2;
+
+mass    = fun_inner(1,phi1);
+surface = B(phi1);
+
+fprintf(out1,'%14.6e  %.10f %.10f \n',t,mass,surface);
+fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_original_discrete);
 end
 
 function lap=lap_diff(phi)
