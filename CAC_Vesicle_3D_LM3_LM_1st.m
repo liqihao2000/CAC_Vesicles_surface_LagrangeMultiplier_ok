@@ -107,7 +107,7 @@ if 1 == option.saveflag
     writematrix(phi0,ss1,'Delimiter',' ');
     writematrix(xx,[dir_data '/X.txt'],'Delimiter',' ');
     writematrix(yy,[dir_data '/Y.txt'],'Delimiter',' ');
-    writematrix(zz,[dir_data '/Y.txt'],'Delimiter',' ');
+    writematrix(zz,[dir_data '/Z.txt'],'Delimiter',' ');
 end
 if 1 == option.plotflag
     if 1 == option.saveflag

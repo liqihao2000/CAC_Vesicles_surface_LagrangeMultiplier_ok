@@ -51,11 +51,11 @@ option.maxit = 2000;
 
 %% user parameters
 pdename = str2func('ex12_Vesicles_data_twoOO');
-% pdename = str2func('ex12_Vesicles_data_twoO_o');
-% pdename = str2func('ex12_Vesicles_data_threeOoo');
-% pdename = str2func('ex12_Vesicles_data_three_elliptic');
-% pdename = str2func('ex12_Vesicles_data_fiveO');
-% pdename = str2func('ex12_Vesicles_data_eightO');
+pdename = str2func('ex12_Vesicles_data_twoO_o');
+pdename = str2func('ex12_Vesicles_data_threeOoo');
+pdename = str2func('ex12_Vesicles_data_three_elliptic');
+pdename = str2func('ex12_Vesicles_data_fiveO');
+pdename = str2func('ex12_Vesicles_data_eightO');
 
 scheme0 = 'CAC_Vesicle_2D_';
 
