@@ -5,15 +5,18 @@ clear; clc;
 addpath('../','-begin');
 
 % Space: Domain and N
-domain.left   =  0;
-domain.right  =2*pi;
-domain.bottom = -pi;
-domain.top    =  pi;
+domain.xleft   = 0;
+domain.xright  = 2*pi;
+domain.yleft   = 0;
+domain.yright  = 2*pi;
+domain.zleft   = 0;
+domain.zright  = 2*pi;
 
-Lx = domain.right - domain.left;
-Ly = domain.top   - domain.bottom;
+Lx = domain.xright - domain.xleft;
+Ly = domain.yright - domain.yleft;
+Lz = domain.zright - domain.zleft;
 
-N = 64;
+N  = 64;
 Nx = N;
 Ny = N;
 Nz = N;
@@ -52,11 +55,12 @@ option.maxit = 2000;
 
 %% user parameters
 pdename = str2func('ex13_Vesicles_data_eight');
-pdename = str2func('ex13_Vesicles_data_six');
-pdename = str2func('ex13_Vesicles_data_five');
+% pdename = str2func('ex13_Vesicles_data_six');
+% pdename = str2func('ex13_Vesicles_data_five');
 % pdename = str2func('ex13_Vesicles_data_four');
 % pdename = str2func('ex13_Vesicles_data_three_elliptic');
-% pdename = str2func('ex13_Vesicles_data_threeOoo');
+pdename = str2func('ex13_Vesicles_data_threeOoo');
+pdename = str2func('ex13_Vesicles_data_twoOO');
 
 scheme0 = 'CAC_Vesicle_3D_';
 
@@ -77,7 +81,7 @@ Z = load([datadir, '/Z.txt']);
 figure(5)
 % for t= [0]
 % for t= [0:tsave:2] % 2.2:0.4:5]
-for t= [0 0.04 0.12 0.2 0.4 1.2 2]
+for t= [0 0.04 0.2 0.4 1.2 2]
     t
     clf;
     ssp = [datadir '/phi_t=' num2str(t) '.txt'];

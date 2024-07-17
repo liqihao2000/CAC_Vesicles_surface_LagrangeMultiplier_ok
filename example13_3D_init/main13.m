@@ -55,12 +55,13 @@ option.tolit = 1e-11;
 option.maxit = 2000;
 
 %% user parameters
-% data_array = {'ex13_Vesicles_data_eight','ex13_Vesicles_data_six',...
-%     'ex13_Vesicles_data_five','ex13_Vesicles_data_four',...
-%     'ex13_Vesicles_data_three_elliptic','ex13_Vesicles_data_threeOoo'
-%     };
+data_array = {'ex13_Vesicles_data_eight','ex13_Vesicles_data_six',...
+    'ex13_Vesicles_data_five','ex13_Vesicles_data_four',...
+    'ex13_Vesicles_data_three_elliptic','ex13_Vesicles_data_threeOoo',...
+    'ex13_Vesicles_data_twoOO',...
+    };
 
-data_array = {'ex13_Vesicles_data_four'};
+% data_array = {'ex13_Vesicles_data_twoOO'};
 index_fig = 1;
 for index = 1:length(data_array)
     pdename = str2func(data_array{index});
@@ -86,11 +87,11 @@ for index = 1:length(data_array)
 
             pde = pdename(para);
             solver_fun = str2func(scheme);
-            %% Run:
-            if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
-                time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
-                solver_fun(pde,domain,Nx,Ny,Nz,time,option);
-            end
+%             %% Run:
+%             if ~isfield(pde,'exact') || ~isfield(pde,'rhs')
+%                 time = struct('T',T,'t0',t0,'dt',dt_ref,'tsave',tsave);
+%                 solver_fun(pde,domain,Nx,Ny,Nz,time,option);
+%             end
             figure(index_fig);
             index_fig = index_fig + 1;
             
