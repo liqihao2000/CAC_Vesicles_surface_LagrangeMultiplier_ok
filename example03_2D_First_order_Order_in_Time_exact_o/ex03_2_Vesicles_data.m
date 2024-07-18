@@ -3,6 +3,12 @@ if nargin == 0
     epsilon = 1;
     M = 1;
     C0 = 0;
+    beta_m = 1;
+    M1  = 0;
+    M2 = 0;
+    S1 = 0;
+    S2 = 0;
+    S3 = 0;
     name = '';
 else
     if ~isstruct(para)
@@ -23,6 +29,36 @@ else
     else
         C0 = para.C0;
     end
+    if ~isfield(para,'beta_m') || isempty(para.beta_m)
+        beta_m = 1;
+    else
+        beta_m = para.beta_m;
+    end
+    if ~isfield(para,'M1') || isempty(para.M1)
+        M1 = 0;
+    else
+        M1 = para.M1;
+    end
+    if ~isfield(para,'M2') || isempty(para.M2)
+        M2 = 0;
+    else
+        M2 = para.M2;
+    end
+    if ~isfield(para,'S1') || isempty(para.S1)
+        S1 = 0;
+    else
+        S1 = para.S1;
+    end
+    if ~isfield(para,'S2') || isempty(para.S2)
+        S2 = 0;
+    else
+        S2 = para.S2;
+    end
+    if ~isfield(para,'S3') || isempty(para.S3)
+        S3 = 0;
+    else
+        S3 = para.S3;
+    end
     if ~isfield(para,'name') || isempty(para.name)
         name = 'ex03_2_Vesicles_data';
     else
@@ -33,6 +69,12 @@ end
 pde = struct('epsilon',epsilon, ...
     'M',M, ...
     'C0',C0, ...
+    'beta_m', beta_m, ... 
+    'M1',M1, ...
+    'M2',M2, ...
+    'S1',S1, ...
+    'S2',S2, ...
+    'S3',S3, ...
     'init',@init, ...
     'exact',@exact, ...
     'exact_t',@exact_t, ...
@@ -51,7 +93,9 @@ pde = struct('epsilon',epsilon, ...
         z = cos(t).*sin(x).*sin(y);
     end
 
-    function z = rhs(x,y,t)
-        z = (sin(x).*sin(y).*(8.*M.*sin(t) + epsilon.^3.*cos(t) + 88.*M.*epsilon.^2.*sin(t) + 8.*M.*epsilon.^4.*sin(t) - 36.*M.*cos(t).^2.*sin(t) + 30.*M.*cos(t).^4.*sin(t) - 72.*M.*cos(x).^2.*sin(t) + 90.*M.*cos(x).^4.*sin(t) - 72.*M.*cos(y).^2.*sin(t) + 90.*M.*cos(y).^4.*sin(t) + 192.*M.*cos(t).^2.*cos(x).^2.*sin(t) - 180.*M.*cos(t).^2.*cos(x).^4.*sin(t) - 120.*M.*cos(t).^4.*cos(x).^2.*sin(t) + 90.*M.*cos(t).^4.*cos(x).^4.*sin(t) + 192.*M.*cos(t).^2.*cos(y).^2.*sin(t) - 180.*M.*cos(t).^2.*cos(y).^4.*sin(t) - 120.*M.*cos(t).^4.*cos(y).^2.*sin(t) + 90.*M.*cos(t).^4.*cos(y).^4.*sin(t) + 288.*M.*cos(x).^2.*cos(y).^2.*sin(t) - 240.*M.*cos(x).^2.*cos(y).^4.*sin(t) - 240.*M.*cos(x).^4.*cos(y).^2.*sin(t) + 150.*M.*cos(x).^4.*cos(y).^4.*sin(t) - 96.*M.*epsilon.^2.*cos(t).^2.*sin(t) - 228.*M.*epsilon.^2.*cos(x).^2.*sin(t) - 228.*M.*epsilon.^2.*cos(y).^2.*sin(t) - 648.*M.*cos(t).^2.*cos(x).^2.*cos(y).^2.*sin(t) + 480.*M.*cos(t).^2.*cos(x).^2.*cos(y).^4.*sin(t) + 480.*M.*cos(t).^2.*cos(x).^4.*cos(y).^2.*sin(t) + 360.*M.*cos(t).^4.*cos(x).^2.*cos(y).^2.*sin(t) - 300.*M.*cos(t).^2.*cos(x).^4.*cos(y).^4.*sin(t) - 240.*M.*cos(t).^4.*cos(x).^2.*cos(y).^4.*sin(t) - 240.*M.*cos(t).^4.*cos(x).^4.*cos(y).^2.*sin(t) + 150.*M.*cos(t).^4.*cos(x).^4.*cos(y).^4.*sin(t) + 228.*M.*epsilon.^2.*cos(t).^2.*cos(x).^2.*sin(t) + 228.*M.*epsilon.^2.*cos(t).^2.*cos(y).^2.*sin(t) + 432.*M.*epsilon.^2.*cos(x).^2.*cos(y).^2.*sin(t) - 432.*M.*epsilon.^2.*cos(t).^2.*cos(x).^2.*cos(y).^2.*sin(t)))./(M.*epsilon.^3);
+    function z = rhs(x,y,t,beta)
+        Lx = para.Lx;
+        Ly = para.Ly;
+        z = ((cos(t).*sin(x).*sin(y))./M - ((4.*sin(t).*(cos(Ly) - 1))./epsilon - (sin(t).*(cos(Ly) - 1))./epsilon.^3 - 4.*epsilon.*sin(t).*(cos(Ly) - 1) - 2.*M2.*pi.^2.*sin(t).*(cos(Ly) - 1) + 4.*epsilon.*cos(Lx).*sin(t).*(cos(Ly) - 1) + (4.*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly).^3./3 - 1./3))./epsilon + 2.*M2.*pi.^2.*sin(t).^3.*(cos(Ly) - 1) - (9.*M2.*pi.^2.*sin(t).^5.*(cos(Ly) - 1))./32 - (4.*cos(Lx).*sin(t).*(cos(Ly) - 1))./epsilon + (cos(Lx).*sin(t).*(cos(Ly) - 1))./epsilon.^3 - (2.*sin(t).^3.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(3.*epsilon) + 2.*M2.*pi.^2.*cos(Lx).*sin(t).*(cos(Ly) - 1) + (M2.*pi.^2.*sin(t).*(cos(Ly) - 1))./epsilon.^2 + (8.*sin(t).^5.*(cos(Lx) - 1).^3.*(cos(Ly) - 1).^3.*(9.*cos(Ly) + 3.*cos(Ly).^2 + 8))./(75.*epsilon.^3) + (2.*cos(Lx).*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly).^3./3 - 1./3))./epsilon + (8.*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(3.*epsilon) - (8.*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon.^3) - 2.*M2.*pi.^2.*cos(Lx).*sin(t).^3.*(cos(Ly) - 1) + (9.*M2.*pi.^2.*cos(Lx).*sin(t).^5.*(cos(Ly) - 1))./32 + 2.*M2.*beta.*epsilon.*sin(t).*(cos(Ly) - 1) - (M2.*pi.^2.*sin(t).^3.*(cos(Ly) - 1))./(2.*epsilon.^2) - 2.*M2.*epsilon.^2.*pi.^2.*sin(t).^3.*(cos(Ly) - 1) + (9.*M2.*pi.^2.*sin(t).^5.*(cos(Ly) - 1))./(64.*epsilon.^2) - (M2.*beta.*sin(t).*(cos(Ly) - 1))./epsilon + (2.*cos(Lx).^3.*sin(t).^3.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(3.*epsilon) + (4.*cos(Lx).*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(3.*epsilon) - (4.*cos(Lx).*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon.^3) - 2.*M2.*beta.*epsilon.*cos(Lx).*sin(t).*(cos(Ly) - 1) + (M2.*pi.^2.*cos(Lx).*sin(t).^3.*(cos(Ly) - 1))./(2.*epsilon.^2) + 2.*M2.*epsilon.^2.*pi.^2.*cos(Lx).*sin(t).^3.*(cos(Ly) - 1) - (9.*M2.*pi.^2.*cos(Lx).*sin(t).^5.*(cos(Ly) - 1))./(64.*epsilon.^2) + (cos(Lx).^2.*sin(t).^5.*(cos(Lx) - 1).^3.*(cos(Ly) - 1).^3.*(9.*cos(Ly) + 3.*cos(Ly).^2 + 8))./(25.*epsilon.^3) + (M2.*beta.*cos(Lx).*sin(t).*(cos(Ly) - 1))./epsilon + (2.*M2.*pi.^2.*sin(t).^5.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./9 - (M2.*pi.^2.*cos(Lx).*sin(t).*(cos(Ly) - 1))./epsilon.^2 + (3.*cos(Lx).*sin(t).^5.*(cos(Lx) - 1).^3.*(cos(Ly) - 1).^3.*(9.*cos(Ly) + 3.*cos(Ly).^2 + 8))./(25.*epsilon.^3) - (2.*M2.*beta.*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon) + (M2.*pi.^2.*cos(Lx).*sin(t).^5.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./9 + (2.*M2.*pi.^2.*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon.^2) - (M2.*pi.^2.*sin(t).^5.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon.^2) + (M2.*pi.^2.*sin(t).^7.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(32.*epsilon.^2) + (M2.*pi.^2.*cos(Lx).*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon.^2) - (M2.*pi.^2.*cos(Lx).*sin(t).^5.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(18.*epsilon.^2) + (M2.*pi.^2.*cos(Lx).*sin(t).^7.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(64.*epsilon.^2) - (M2.*beta.*cos(Lx).*sin(t).^3.*(cos(Lx) - 1).^2.*(cos(Ly) - 1).^2.*(cos(Ly) + 2))./(9.*epsilon))./(Lx.*Ly) - (2.*sin(t).*sin(x).*sin(y).*(3.*sin(t).^2.*sin(x).^2 - 2.*epsilon.^2 + 3.*sin(t).^2.*sin(y).^2 - 9.*sin(t).^2.*sin(x).^2.*sin(y).^2 + 1))./epsilon + (sin(t).*sin(x).*sin(y).*(3.*sin(t).^2.*sin(x).^2.*sin(y).^2 - 1).*(2.*epsilon.^2 + sin(t).^2.*sin(x).^2.*sin(y).^2 - 1))./epsilon.^3 + (M2.*sin(t).*sin(x).*sin(y).*(2.*epsilon.^2 + sin(t).^2.*sin(x).^2.*sin(y).^2 - 1).*(9.*pi.^2.*sin(t).^4 - 32.*pi.^2.*sin(t).^2 - 64.*beta.*epsilon + 64.*pi.^2 + 64.*epsilon.^2.*pi.^2.*sin(t).^2))./(64.*epsilon.^2))./epsilon;
     end
 end

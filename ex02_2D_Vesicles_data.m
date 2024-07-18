@@ -4,6 +4,8 @@ if nargin == 0
     M = 1;
     C0 = 0;
     beta_m = 1;
+    M1  = 0;
+    M2 = 0;
     S1 = 0;
     S2 = 0;
     S3 = 0;
@@ -32,6 +34,16 @@ else
     else
         beta_m = para.beta_m;
     end
+    if ~isfield(para,'M1') || isempty(para.M1)
+        M1 = 0;
+    else
+        M1 = para.M1;
+    end
+    if ~isfield(para,'M2') || isempty(para.M2)
+        M2 = 0;
+    else
+        M2 = para.M2;
+    end
     if ~isfield(para,'S1') || isempty(para.S1)
         S1 = 0;
     else
@@ -58,6 +70,8 @@ pde = struct('epsilon',epsilon, ...
     'M',M, ...
     'C0',C0, ...
     'beta_m', beta_m, ... 
+    'M1',M1, ...
+    'M2',M2, ...
     'S1',S1, ...
     'S2',S2, ...
     'S3',S3, ...

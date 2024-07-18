@@ -55,10 +55,10 @@ option.maxit = 2000;
 
 %% user parameters
 pdename = str2func('ex13_Vesicles_data_eight');
-% pdename = str2func('ex13_Vesicles_data_six');
-% pdename = str2func('ex13_Vesicles_data_five');
-% pdename = str2func('ex13_Vesicles_data_four');
-% pdename = str2func('ex13_Vesicles_data_three_elliptic');
+pdename = str2func('ex13_Vesicles_data_six');
+pdename = str2func('ex13_Vesicles_data_five');
+pdename = str2func('ex13_Vesicles_data_four');
+pdename = str2func('ex13_Vesicles_data_three_elliptic');
 pdename = str2func('ex13_Vesicles_data_threeOoo');
 pdename = str2func('ex13_Vesicles_data_twoOO');
 

@@ -1,9 +1,12 @@
-function [phi, u0] = CAC_Vesicle_2D_LM0_SAV_1st(pde,domain,Nx,Ny,time,option)
+function [phi, u0, v0] = CAC_Vesicle_2D_MSAV_1st(pde,domain,Nx,Ny,time,option)
 % Solve 2D Vesicle model
 % Qi Li
-% 05/3/2024
+% Reference: Li, Xi, Tongmao Li, Rungting Tu, Kejia Pan, Chuanjun Chen, and Xiaofeng Yang. 
+% "Efficient energy stable scheme for volume-conserved phase-field elastic bending energy model of lipid vesicles." 
+% Journal of Computational and Applied Mathematics 385 (2021): 113177.
+% 04/09/2022
 global dt kx ky kxx kyy k2 k4 hx hy Lx Ly ...
-       epsilon M S1 S2 S3 C0
+       epsilon M beta beta_m C0 M1 M2 S1 S2 S3
 
 if ~exist('option','var'), option = []; end
 if ~isfield(option,'tol')
@@ -55,10 +58,13 @@ dir_data = [pde.name '/data'];
 
 epsilon = pde.epsilon;
 M       = pde.M;
-S1      = pde.S1;
-S2      = pde.S2;
-S3      = pde.S3;
 C0      = pde.C0;
+beta_m  = pde.beta_m;
+M1   = pde.M1;
+M2   = pde.M2;
+S1   = pde.S1;
+S2   = pde.S2;
+S3   = pde.S3;
 
 Lx = domain.right - domain.left;
 Ly = domain.top   - domain.bottom;
@@ -83,6 +89,8 @@ k4 = k2.^2;
 [xx,yy] = ndgrid(x,y);
 phi0 = pde.init(xx,yy);
 nfigure =1;
+
+beta  = beta_m*B(phi0);
 
 %% plot initial value
 nfigure =1;
@@ -110,6 +118,7 @@ nsave = round(tsave/dt);
 tstart = tic;
 
 u0 = fun_u_init(phi0);
+v0 = fun_v_init(phi0);
 
 % Initial energy
 if 1 == option.energyflag
@@ -123,68 +132,76 @@ for nt = 1:nplot
     
     % step 1
     H = fun_H(phi_star);
-    g = u0 - 1/2*fun_inner(H,phi0);
-    
-    g1 = phi0/dt/M...
-           + S1./epsilon.^3.*(phi_star - 1./(Lx.*Ly).*fun_inner(phi_star,1)) ...
-           - S2./epsilon.*(lap_diff(phi_star) - 1./(Lx.*Ly).*fun_inner(lap_diff(phi_star),1)) ...
-           + S3*epsilon.*(lap_diff(lap_diff(phi_star)) - 1./(Lx.*Ly).*fun_inner(lap_diff(lap_diff(phi_star)),1))...
-           - H.*g;
+    G = fun_G(phi_star);
+    g = get_rhs(phi0,u0,v0,H,G);
     if isfield(pde,'rhs') && isfield(pde,'exact')
-%         ephi   = pde.exact(xx,yy,t);
-%         ephi_t = pde.exact_t(xx,yy,t);
-%         emu   = epsilon*lap_diff(lap_diff(ephi)) + fun_q(ephi);
-%         tmp  = ephi_t./M - lap_diff(emu);
-        tmp = pde.rhs(xx,yy,t);
-        g1 = g1 + tmp;
+        ephi   = pde.exact(xx,yy,t);
+        ephi_t = pde.exact_t(xx,yy,t);
+        B_phi = fft2(epsilon/2.*grad_square(ephi)+1.0./epsilon.*F(ephi));
+        B_phi = B_phi(1,1).*hx*hy;
+        emu   = -epsilon.*lap_diff(omega(ephi)) + 1/epsilon.*f_der(ephi).*omega(ephi)...
+                +M2.*(B_phi-beta).*epsilon.*omega(ephi);
+        emu_bar = fft2(emu);
+        emu_bar = emu - emu_bar(1,1) / (Lx*Ly);
+        tmp  = (ephi_t./M + emu_bar) / epsilon;
+
+%         tmp = pde.rhs(xx,yy,t,beta);
+%         subplot(1,2,1)
+%         mesh(tmp)
+%         subplot(1,2,2)
+%         mesh(tmp2)
+        g = g + tmp;
     end
-    g2 = delta_B(phi_star)-fun_inner(1,delta_B(phi_star))./(Lx*Ly);
 
     psiA = inv_A(H);
-    psiB = inv_A(g1);  
-    psiC = inv_A(g2); 
-
-    b1 = fun_inner(H, psiB);
-    b2 = fun_inner(H, psiC);
+    psiB = inv_A(G);
+    psiC = inv_A(g);  
     
-    mu = 0.5*fun_inner(H,psiA);
+    b1 = fft2(H.*psiC);
+    b1 = b1(1,1)*hx*hy;
     
-    X = b1./(mu + 1);
-    Y = b2./(mu + 1);
+    b2 = fft2(G.*psiC);
+    b2 = b2(1,1)*hx*hy; 
+    
+    mu1 = fft2(H.*psiA);
+    mu1 = mu1(1,1)*hx*hy;
+    
+    mu2 = epsilon.*M2*fft2(H.*psiB);
+    mu2 = mu2(1,1)*hx*hy;
+    
+    mu3 = fft2(G.*psiA);
+    mu3 = mu3(1,1)*hx*hy;
+    
+    mu4 = epsilon.*M2*fft2(G.*psiB);
+    mu4 = mu4(1,1)*hx*hy;
+    
+    % Step 2
+    X = (b1 - b2*mu2 + b1*mu4)./(mu1 + mu4 + mu1*mu4 - mu2*mu3 + 1);
+    Y = (b2 + b2*mu1 - b1*mu3)./(mu1 + mu4 + mu1*mu4 - mu2*mu3 + 1);
    
     % Step 3
-    phi1_new = -1/2*X.*psiA + psiB;
-    phi2_new = -1/2*Y.*psiA + psiC;
-    
-    u1_new = g + 1/2*X;
-    u2_new = 1/2*Y;
-
-    lambda = fun_inner(delta_B(phi_star),phi0-phi1_new) ./ fun_inner(delta_B(phi_star),phi2_new);
-
-%     lambda = 0;
-    phi = phi1_new + lambda*phi2_new; 
-    u   = u1_new   + lambda*u2_new; 
+    phi = -X.*psiA - epsilon.*M2*Y.*psiB + psiC; 
     
     %% update phi0
+    u0 = fun_u(phi,phi0,u0,H); 
+    v0 = fun_v(phi,phi0,v0,G); 
     phi0 = phi;  
-    u0 = u;
     
     if 1 == option.energyflag
-        calculate_energy(out1,out2,t,phi,u);
+        calculate_energy(out1,out2,t,phi0,u0,v0);
     end
 
     if  0 == mod(nt,nsave)
         if 1 == option.printflag
             timeElapsed = toc(tstart);
-            fprintf('lambda=%.4e,epsilon=%.3f,t=%.5f/%.4f, dt=%.2e, Nx=%d, Ny=%d, timeElapsed=%f\n',lambda,epsilon,t,T,dt,Nx,Ny,timeElapsed);
+            fprintf('epsilon=%.3f,t=%.4f/%.3f, dt=%.2e, Nx=%d, Ny=%d, timeElapsed=%f\n',epsilon,t,T,dt,Nx,Ny,timeElapsed);
         end
         
         if 1 == option.saveflag
-            if ~exist(dir_data,'dir')
-                mkdir(dir_data);
-            end
-            ss1 = [dir_data '/phi_t=' num2str(t) '.txt'];
-            writematrix(phi0,ss1,'Delimiter',' ');
+            ss = [dir_data '/phi_t=' num2str(t) '.txt'];
+            fid = fopen(ss, 'wt');
+            fprintf(fid, '%f\n', phi(:));
+            fclose(fid);
         end
         
         nfigure = nfigure +1;
@@ -195,7 +212,10 @@ for nt = 1:nplot
             if 1 == option.saveflag
                 showsolution_2D(nfigure,xx,yy,phi,t,dir_fig);
             else
+%                 subplot(1,2,1);
                 showsolution_2D(nfigure,xx,yy,phi,t);
+%                 subplot(1,2,2);
+%                 showsolution_2D(nfigure,xx,yy,pde.exact(xx,yy,t),t);
             end
         end
     end
@@ -216,49 +236,73 @@ end
 end
 
 function result = fun_u_init(phi)
-global C0
-if fun_inner(1,fun_Q(phi)) + C0 <0
+global epsilon C0
+E1 = fun_inner(1,(lap_diff(phi)-1./epsilon.^2*f(phi)).^2);
+if E1 + C0 <0
     disp("Root < 0");
     return;
 end
-result  = sqrt(fun_inner(1,fun_Q(phi)) + C0);
+result  = sqrt(E1 + C0);
+end
+
+function result = fun_v_init(phi)
+global beta
+result  = B(phi) - beta;
 end
 
 function result = fun_H(phi)
-global C0 Lx Ly hx hy
-if fun_inner(1,fun_Q(phi)) + C0 <0
+global epsilon C0 Lx Ly
+E1 = fun_inner(1,(lap_diff(phi)-1./epsilon.^2*f(phi)).^2);
+if E1 + C0 < 0
     disp("Root < 0");
     return;
 end
-H = fun_q(phi)./sqrt(fun_inner(1,fun_Q(phi)) + C0);
-H_bar = fft2(H);
-result = H - 1./(Lx*Ly).*H_bar(1,1)*hx*hy;
+delta_V = -lap_diff(omega(phi)) + 1/epsilon.^2*f_der(phi).*omega(phi);
+r1 = delta_V./sqrt(E1 + C0);
+r2 = fun_inner(1,r1);
+result  = r1 - r2/(Lx*Ly);
+end
+
+function result = fun_G(phi)
+global epsilon Lx Ly
+r1 = -lap_diff(phi) + (1/epsilon.^2).*f(phi);
+r2 = fun_inner(1,r1);
+result  = r1 - r2/(Lx*Ly);
+end
+
+function result = fun_u(phi,phi0,u0,H)
+Hphi0 = fun_inner(H,phi0);
+Hphi1 = fun_inner(H,phi);
+g1 = u0 - Hphi0;
+result  = Hphi1 + g1;
+end
+
+function result = fun_v(phi,phi0,v0,G)
+global epsilon
+Gphi0 = fun_inner(G,phi0);
+Gphi1 = fun_inner(G,phi);
+g2 = v0 - epsilon.*Gphi0;
+result  = epsilon.*Gphi1 + g2;
+end
+
+function result = get_rhs(phi0,u0,v0,H,G)
+global dt M epsilon M2 S1 S2 S3
+Hphi0 = fun_inner(H,phi0);
+Gphi0 = fun_inner(G,phi0);
+g1 = u0 - Hphi0;
+g2 = v0 - epsilon.*Gphi0;
+
+result = phi0/epsilon/dt/M - H.*g1 - M2.*G.*g2 ...
+         + S1/epsilon.^4.*phi0 - S2/epsilon.^2*lap_diff(phi0) ...
+         + S3*lap_diff(lap_diff(phi0));
 end
 
 function result = inv_A(phi)
-global dt k2 M S1 S2 S3 epsilon
-    L1 = epsilon.*k2.^2;
-    L2 = S1/epsilon.^3 - S2/epsilon*k2 + S3*epsilon.*k2.^2;
+global dt k2 M epsilon S1 S2 S3
+    L1 = S1/epsilon.^4 - S2/epsilon.^2*k2 + S3*k2.^2;
     phihat = fft2(phi);
-    r      = phihat./(1/dt/M + L1 + L2);
-    r(1,1) = phihat(1,1)./(1/dt/M + L1(1,1) - L1(1,1) + L2(1,1) - L2(1,1));
+    r      = phihat./(1/epsilon/dt/M + L1);
     result = real(ifft2(r));
-end
-
-function result = fun_Q(phi)
-global epsilon
-    result = 6./epsilon.^2.*phi.^2.*grad_square(phi) ...
-             - 2/epsilon.^2.*grad_square(phi) ...
-             + 1/epsilon.^4.*(f(phi)).^2;
-    result = result*epsilon/2;
-end
-
-function result = fun_q(phi)
-global epsilon
-    div_term = diff_x(phi.^2.*diff_x(phi)) + diff_y(phi.^2.*diff_y(phi));
-    result = 6./epsilon.*(phi.*grad_square(phi) - div_term) ...
-             + 2/epsilon.*lap_diff(phi) ...
-             + 1/epsilon.^3.*f(phi).*f_der(phi);
 end
 
 function r = fun_inner(f,g)
@@ -267,14 +311,16 @@ global hx hy
     r = r1(1,1)*hx*hy;
 end
 
-function [] = calculate_energy(out1,out2,t,phi,u)
-global C0 epsilon
-energy_linear = fun_inner(1,1./2.*epsilon.*lap_diff(phi).^2);
-energy_nonlinear = fun_inner(1,fun_Q(phi));
+function [] = calculate_energy(out1,out2,t,phi,u,v)
+global C0 epsilon M2 beta
 
-energy_original = energy_linear + energy_nonlinear;
+energy_part1 = fun_inner(1,epsilon./2.*(lap_diff(phi) - f(phi)).^2) ;
 
-energy_modified = energy_linear + u.^2 - C0;
+energy_part2 = 1./2.*M2.*(B(phi) - beta).^2;
+
+energy_original = energy_part1 + energy_part2;
+
+energy_modified = epsilon./2.*(u.^2 - C0) + 1./2.*M2.*v.^2;
 
 mass    = fun_inner(1,phi);
 surface = B(phi);
@@ -302,6 +348,11 @@ function result = grad_square(phi)
     result = diff_x(phi).^2 + diff_y(phi).^2;
 end
 
+function result = omega(phi)
+global epsilon
+    result = -lap_diff(phi) + 1/(epsilon.^2).*f(phi);
+end
+
 function result = f_der(phi)
     result = 3.*phi.^2-1;
 end
@@ -318,10 +369,4 @@ function result = B(phi)
 global epsilon
     result = fun_inner(1,epsilon./2.*grad_square(phi)+1/epsilon.*F(phi));
 end
-
-function result = delta_B(phi)
-global epsilon
-    result = -epsilon*lap_diff(phi) + 1/epsilon.*f(phi);
-end
-
 
