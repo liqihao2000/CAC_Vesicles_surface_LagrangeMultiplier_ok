@@ -138,7 +138,8 @@ for i_2 = 1:length(scheme2_array)
 
             mass=load(figname_mass);
             tmp = 1;
-            plot(mass(tmp:1:end,1),(mass(tmp:1:end,3)-mass(1,3))./mass(1,3),'-','LineWidth',2.5);
+%             plot(mass(tmp:1:end,1),(mass(tmp:1:end,3)-mass(1,3))./mass(1,3),'-','LineWidth',2.5);
+            plot(mass(tmp:1:end,1),mass(tmp:1:end,3),'-','LineWidth',2.5);
         end
         h = legend(legend_str);
         xlabel('Time','Fontsize',18,'interpreter','latex');

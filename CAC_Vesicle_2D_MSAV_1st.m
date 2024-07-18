@@ -122,7 +122,7 @@ v0 = fun_v_init(phi0);
 
 % Initial energy
 if 1 == option.energyflag
-    calculate_energy(out1,out2,t,phi0,u0);
+    calculate_energy(out1,out2,t,phi0,u0,v0);
 end
 
 for nt = 1:nplot

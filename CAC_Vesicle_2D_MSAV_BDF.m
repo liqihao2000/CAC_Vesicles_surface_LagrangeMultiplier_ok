@@ -299,7 +299,7 @@ global hx hy
 end
 
 function [] = calculate_energy(out1,out2,t,phi1,phi0,u1,u0,v1,v0)
-global C0 epsilon M2 beta
+global C0 epsilon M2 S1 S2 S3 beta
 
 energy_part1 = fun_inner(1,epsilon./2.*(lap_diff(phi1) - f(phi1)).^2) ;
 energy_part2 = 1./2.*M2.*(B(phi1) - beta).^2;
@@ -316,8 +316,8 @@ energy_S = fun_inner(1,energy_S);
 
 energy_modified = energy_S + epsilon./2.*((u1.^2+u_star.^2)/2-C0) + 1./2.*M2.*(v1.^2+v_star.^2)/2;
 
-mass    = fun_inner(1,phi);
-surface = B(phi);
+mass    = fun_inner(1,phi1);
+surface = B(phi1);
 
 fprintf(out1,'%14.6e  %.10f %.10f \n',t,mass,surface);
 fprintf(out2,'%14.6e  %f  %f\n',t,energy_original,energy_modified);

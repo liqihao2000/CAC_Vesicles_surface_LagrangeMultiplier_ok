@@ -22,6 +22,8 @@ para.C0 = 100; % SAV
 para.epsilon = 6*pi/128;
 % para.epsilon = 0.07;
 para.M = 1;
+para.M1 = 50;
+para.M2 = 100;
 para.S1 = 4;
 para.S2 = 4;
 para.S3 = 1;
@@ -53,8 +55,8 @@ option.maxit = 2000;
 pdename = str2func('ex10_Vesicles_data');
 scheme0 = 'CAC_Vesicle_2D_';
 
-scheme1_array = {'LM0_SAV_','LM1_SAV_','LM3_LM_'};
-% scheme1_array = {'LM3_LM_'};
+scheme1_array = {'MSAV_','LM0_SAV_','LM1_SAV_','LM3_LM_'};
+scheme1_array = {'MSAV_'};
 
 scheme2_array = {'1st','BDF'};
 % scheme2_array = {'BDF'};
