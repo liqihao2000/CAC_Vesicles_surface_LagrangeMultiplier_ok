@@ -56,7 +56,7 @@ for i_2 = 1:length(scheme2_array)
         for k = 1:maxIt
             figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(dt_array(k)),'_mass.txt'];
 
-            mass=load(figname_mass);e
+            mass=load(figname_mass);
             tmp = 1;
             plot(mass(tmp:1:end,1),abs((mass(tmp:1:end,3)-mass(1,3))./mass(1,3)),'-','LineWidth',2.5);
 %             plot(mass(tmp:1:end,1),mass(tmp:1:end,3),'-','LineWidth',2.5);
