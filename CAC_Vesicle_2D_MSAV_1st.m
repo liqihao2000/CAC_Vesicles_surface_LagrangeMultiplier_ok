@@ -314,7 +314,7 @@ end
 function [] = calculate_energy(out1,out2,t,phi,u,v)
 global C0 epsilon M2 beta
 
-energy_part1 = fun_inner(1,epsilon./2.*(lap_diff(phi) - f(phi)).^2) ;
+energy_part1 = fun_inner(1,epsilon./2.*(lap_diff(phi) - 1./epsilon.^2*f(phi)).^2) ;
 
 energy_part2 = 1./2.*M2.*(B(phi) - beta).^2;
 

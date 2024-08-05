@@ -55,12 +55,12 @@ option.maxit = 2000;
 
 %% user parameters
 pdename = str2func('ex13_Vesicles_data_eight');
-pdename = str2func('ex13_Vesicles_data_six');
-pdename = str2func('ex13_Vesicles_data_five');
+% pdename = str2func('ex13_Vesicles_data_six');
+% pdename = str2func('ex13_Vesicles_data_five');
 pdename = str2func('ex13_Vesicles_data_four');
-pdename = str2func('ex13_Vesicles_data_three_elliptic');
-pdename = str2func('ex13_Vesicles_data_threeOoo');
-pdename = str2func('ex13_Vesicles_data_twoOO');
+% pdename = str2func('ex13_Vesicles_data_three_elliptic');
+% pdename = str2func('ex13_Vesicles_data_threeOoo');
+% pdename = str2func('ex13_Vesicles_data_twoOO');
 
 scheme0 = 'CAC_Vesicle_3D_';
 
@@ -81,7 +81,8 @@ Z = load([datadir, '/Z.txt']);
 figure(5)
 % for t= [0]
 % for t= [0:tsave:2] % 2.2:0.4:5]
-for t= [0 0.04 0.2 0.4 1.2 2]
+% for t= [0 0.04 0.2 0.4 1.2 2]
+for t= [0 0.12 0.8 2]
     t
     clf;
     ssp = [datadir '/phi_t=' num2str(t) '.txt'];
@@ -111,6 +112,7 @@ for t= [0 0.04 0.2 0.4 1.2 2]
 %     axis tight;
     axis square;
     axis equal;
+    axis off;
 %     axis([min(xx(:)) min(xx(:))min(yy(:)) max(yy(:)) min(zz(:)) max(zz(:)) ]);
 %     axis 'auto xy';
     xlim([0, 2*pi])
@@ -125,17 +127,17 @@ for t= [0 0.04 0.2 0.4 1.2 2]
     c = ax.Color;
     ax.Color = [0.30,0.75,0.90];
 
-    xlabel('$x$','FontSize',18,'Interpreter','LaTex');
-    ylabel('$y$','FontSize',18,'Interpreter','LaTex');
-    zlabel('$z$','FontSize',18,'Interpreter','LaTex');
-%     set(gca,'xtick',[])
-%     set(gca,'ytick',[])
-%     set(gca,'ztick',[])
+%     xlabel('$x$','FontSize',18,'Interpreter','LaTex');
+%     ylabel('$y$','FontSize',18,'Interpreter','LaTex');
+%     zlabel('$z$','FontSize',18,'Interpreter','LaTex');
+    set(gca,'xtick',[])
+    set(gca,'ytick',[])
+    set(gca,'ztick',[])
     drawnow;
     set(gcf, 'InvertHardCopy', 'off');
     set(0,'defaultfigurecolor','w') 
-    figname = ['C:\Users\heyan\Desktop\sjj\songfig\3Deight_globes_phi_t=' num2str(t) '.png'];
-%     print(figname,'-dpng', '-r300')
+    figname = ['/Users/liq/work/05_AcademicActivity/2024_05_兰州大学/Vesicle_slide/figure_vesicle_01_Lagrange/' dirname '_phi_t=' num2str(t) '.png'];
+    print(figname,'-dpng', '-r300')
 end
 
 

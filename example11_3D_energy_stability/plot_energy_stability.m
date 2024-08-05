@@ -22,13 +22,15 @@ dt_ref = 4e-4;
 maxIt = length(dt_array);
 
 %% user parameters
-pdedata = 'ex10_Vesicles_data_';
+pdedata = 'ex11_Vesicles_data_';
 scheme0 = 'CAC_Vesicle_2D_';
 
 scheme1_array = {'LM0_SAV_','LM1_SAV_','LM3_LM_'};
 % scheme1_array = {'LM0_SAV_','LM3_LM_'};
+scheme1_array = {'LM3_LM_'};
 
 scheme2_array = {'1st','BDF'};
+scheme2_array = {'BDF'};
 
 legend_str =string(['$\delta t = ',num2str(dt_array(1)),'$']);
 for kk_dt = 2:length(dt_array)
@@ -90,7 +92,7 @@ for i_2 = 1:length(scheme2_array)
         scheme = [scheme0,scheme1,scheme2];
         para.name = [pdedata,[scheme1,scheme2]];
 
-        pde = ex10_Vesicles_data(para);
+        pde = ex11_Vesicles_data(para);
         hold on;
         for k = 1:maxIt
             figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(dt_array(k)),'_mass.txt'];

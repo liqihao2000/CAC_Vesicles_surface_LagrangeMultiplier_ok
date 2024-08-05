@@ -51,11 +51,11 @@ option.maxit = 2000;
 
 %% user parameters
 pdename = str2func('ex12_Vesicles_data_twoOO');
-pdename = str2func('ex12_Vesicles_data_twoO_o');
-pdename = str2func('ex12_Vesicles_data_threeOoo');
-pdename = str2func('ex12_Vesicles_data_three_elliptic');
-pdename = str2func('ex12_Vesicles_data_fiveO');
-pdename = str2func('ex12_Vesicles_data_eightO');
+% pdename = str2func('ex12_Vesicles_data_twoO_o');
+% pdename = str2func('ex12_Vesicles_data_threeOoo');
+% pdename = str2func('ex12_Vesicles_data_three_elliptic');
+% pdename = str2func('ex12_Vesicles_data_fiveO');
+% pdename = str2func('ex12_Vesicles_data_eightO');
 
 scheme0 = 'CAC_Vesicle_2D_';
 
@@ -75,7 +75,8 @@ Y = load([datadir, '/Y.txt']);
 
 figure(5)
 % for t= [0]
-for t= [0:tsave:2 2.2:0.4:5]
+% for t= [0:tsave:2 2.2:0.4:5]
+for t= [0 0.12 0.4 1 5]
     t
     ssp = [datadir '/phi_t=' num2str(t) '.txt'];
     phi = load(ssp);
@@ -103,13 +104,19 @@ for t= [0:tsave:2 2.2:0.4:5]
 %     caxis([-0.7 0.7])
 %     colorbar off;
     
-    drawnow;
     
-%     figname = [figdir '/phi_t=' num2str(t) '.eps'];
-%     print(figname,'-depsc2', '-r120')
-
-    figname = [figdir '_phi_t=' num2str(t) '.png'];
-%     print(figname,'-dpng', '-r300')
+%     xlabel('$x$','FontSize',18,'Interpreter','LaTex');
+%     ylabel('$y$','FontSize',18,'Interpreter','LaTex');
+%     zlabel('$z$','FontSize',18,'Interpreter','LaTex');
+    set(gca,'xtick',[])
+    set(gca,'ytick',[])
+    set(gca,'ztick',[])
+    drawnow;
+%     pause(0.5)
+    set(gcf, 'InvertHardCopy', 'off');
+    set(0,'defaultfigurecolor','w') 
+    figname = ['/Users/liq/work/05_AcademicActivity/2024_05_兰州大学/Vesicle_slide/figure_vesicle_01_Lagrange/' dirname '_phi_t=' num2str(t) '.png'];
+    print(figname,'-dpng', '-r300')
 end
 
 

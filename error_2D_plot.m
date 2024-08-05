@@ -34,7 +34,7 @@ newcolors = [
         0.635000000000000   0.078000000000000   0.184000000000000
         ];
 
-n=0;
+n=1;
 for kkk = 1:2
     if 1 == kkk
         para.S1 = 0;
@@ -110,8 +110,10 @@ for kkk = 1:2
     set(get(gca,'YLabel'),'FontSize',figure_FontSize);
     set(findobj('FontSize',10),'FontSize',figure_FontSize); %这4句是将字体大小改为8号字，在小图里很清晰
 
-    figname1 = ['/Users/liq/work/10_UndergraduateThesis/2024/2024_chenhuiyi/CHD_Bachelor_ChenHuiyi/figs/error_',num2str(n),'.png'];
-    %     print(figname1,'-dpng', '-r300')
+    figname1 = ['/Users/liq/work/05_AcademicActivity/2024_05_兰州大学/Vesicle_slide/figure_vesicle_01_Lagrange/error_',num2str(n),'.png'];
+    print(figname1,'-dpng', '-r300')
+
+    n = n+1;
 
 end
 

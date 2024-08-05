@@ -22,11 +22,11 @@ dt_ref = 4e-4;
 maxIt = length(dt_array);
 
 %% user parameters
-pdedata = 'ex10_Vesicles_data_';
+pdename = str2func('ex10_Vesicles_data');
 scheme0 = 'CAC_Vesicle_2D_';
 
 scheme1_array = {'MSAV_','LM0_SAV_','LM1_SAV_','LM3_LM_'};
-% scheme1_array = {'LM0_SAV_','LM3_LM_'};
+scheme1_array = {'MSAV_','LM1_SAV_','LM3_LM_'};
 
 % scheme2_array = {'1st','BDFs'};
 scheme2_array = {'BDF'};
@@ -48,13 +48,15 @@ for i_2 = 1:length(scheme2_array)
         scheme1 = scheme1_array{i_1};
         scheme2 = scheme2_array{i_2};
 
+        dirname = [func2str(pdename),'_',[scheme1,scheme2]];
+
         scheme = [scheme0,scheme1,scheme2];
-        para.name = [pdedata,[scheme1,scheme2]];
+        para.name = [func2str(pdename),[scheme1,scheme2]];
 
         pde = ex10_Vesicles_data(para);
         hold on;
         for k = 1:maxIt
-            figname_mass = [pde.name,'_S1_',num2str(pde.S1),'_dt_',num2str(dt_array(k)),'_mass.txt'];
+            figname_mass = [dirname,'_S1_',num2str(pde.S1),'_dt_',num2str(dt_array(k)),'_mass.txt'];
 
             mass=load(figname_mass);
             tmp = 1;
@@ -64,11 +66,11 @@ for i_2 = 1:length(scheme2_array)
     end
 end
 
-% scheme1_array = {"LM0_SAV","LM1_SAV","LM3_LM"};
-h = legend('MSAV','LM0SAV','LM1SAV','LM3LM');
+% h = legend('MSAV','LM0SAV','LM1SAV','LM3LM');
+h = legend('MSAV','SAV-BDF','LM-BDF');
 xlabel('Time','Fontsize',18,'interpreter','latex');
 ylabel('Ratio of Surface Area Difference','Fontsize',18,'interpreter','latex');
-% set(gca,'FontSize',22);
+set(gca,'FontSize',24);
 % set(gca,'linewidth',1.5);
 % % xlim([0 18])
 %         ylim([2 16])
@@ -81,5 +83,9 @@ grid on;
 % % set(gcf,'unit','normalized','position',[0.2,0.2,0.64,0.32]);
 % % set (gca,'position',[0.15,0.11,0.8,0.8] );
 
+set(gcf, 'InvertHardCopy', 'off');
+set(0,'defaultfigurecolor','w') 
+figname = ['/Users/liq/work/05_AcademicActivity/2024_05_兰州大学/Vesicle_slide/figure_vesicle_01_Lagrange/' dirname 'surface_ratio' '.png'];
+print(figname,'-dpng', '-r300')
 
 
